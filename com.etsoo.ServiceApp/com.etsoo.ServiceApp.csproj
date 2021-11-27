@@ -27,4 +27,15 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Authentication\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="com.etsoo.CoreFramework" Version="1.1.41" />
+    <PackageReference Include="com.etsoo.UserAgentParser" Version="1.0.5" />
+    <PackageReference Include="com.etsoo.Utils" Version="1.0.79" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="4.0.0" />
+  </ItemGroup>
+
 </Project>
