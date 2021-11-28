@@ -1,7 +1,7 @@
 ﻿using com.etsoo.CoreFramework.Application;
 using Microsoft.Extensions.Configuration;
 
-namespace com.etsoo.ServiceApp
+namespace com.etsoo.ServiceApp.Application
 {
     public record ServiceAppConfiguration : AppConfiguration, IServiceAppConfiguration
     {

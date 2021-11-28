@@ -1,6 +1,6 @@
 ﻿using com.etsoo.CoreFramework.Application;
 
-namespace com.etsoo.ServiceApp
+namespace com.etsoo.ServiceApp.Application
 {
     /// <summary>
     /// SmartERP service application configuration interface

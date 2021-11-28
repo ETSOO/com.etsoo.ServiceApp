@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
 
-namespace com.etsoo.ServiceApp
+namespace com.etsoo.ServiceApp.Application
 {
     /// <summary>
     /// SmartERP service application

@@ -3,7 +3,7 @@ using com.etsoo.CoreFramework.Authentication;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 
-namespace com.etsoo.ServiceApp
+namespace com.etsoo.ServiceApp.Application
 {
     /// <summary>
     /// SmartERP service application interface
