@@ -17,7 +17,7 @@
 	<RepositoryType>GitHub</RepositoryType>
 	<RepositoryUrl>https://github.com/ETSOO/com.etsoo.ServiceApp</RepositoryUrl>
 	<SignAssembly>True</SignAssembly>
-	<AssemblyOriginatorKeyFile>D:\Etsoo\etsoo.snk</AssemblyOriginatorKeyFile>
+	<AssemblyOriginatorKeyFile>etsoo.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
