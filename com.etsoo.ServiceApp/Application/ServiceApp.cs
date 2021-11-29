@@ -1,13 +1,11 @@
 ﻿using com.etsoo.CoreFramework.Application;
 using com.etsoo.CoreFramework.Authentication;
 using com.etsoo.CoreFramework.User;
-using com.etsoo.Utils.Crypto;
 using com.etsoo.Utils.Database;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Text;
 
 namespace com.etsoo.ServiceApp.Application
 {
@@ -17,42 +15,13 @@ namespace com.etsoo.ServiceApp.Application
     /// </summary>
     public record ServiceApp : CoreApplication<SqlConnection>, IServiceApp
     {
-        /// <summary>
-        /// Service name
-        /// </summary>
-        protected static string ServiceName = "SmartERPService";
-
-        private static string DoSecretData(string input)
-        {
-            input = input.Replace("-", "");
-            input = (char)((input[0] + input.Last()) / 2) + input[2..] + ServiceName;
-            return input;
-        }
-
-        /// <summary>
-        /// Secret data, keep it safe
-        /// Powershell: [System.Environment]::SetEnvironmentVariable('ServiceName', [guid]::NewGuid().Guid,[System.EnvironmentVariableTarget]::Machine)
-        /// </summary>
-        private static readonly string secretData = DoSecretData(Environment.GetEnvironmentVariable(ServiceName, EnvironmentVariableTarget.Machine) ?? Guid.NewGuid().ToString());
-
-        /// <summary>
-        /// Unseal data
-        /// 解密信息
-        /// </summary>
-        /// <param name="input">Base64 input data</param>
-        /// <returns>Unsealed data</returns>
-        public static string UnsealData(string input)
-        {
-            return Encoding.UTF8.GetString(CryptographyUtils.AESDecrypt(Convert.FromBase64String(input), secretData));
-        }
-
-        private static (ServiceAppConfiguration, IDatabase<SqlConnection>) Create(IConfigurationSection section, bool modelValidated)
+        private static (ServiceAppConfiguration, IDatabase<SqlConnection>) Create(IConfigurationSection section, bool modelValidated, Func<string, string> unsealData)
         {
             // App configuration
-            var config = new ServiceAppConfiguration(section.GetSection("Configuration"), UnsealData, modelValidated);
+            var config = new ServiceAppConfiguration(section.GetSection("Configuration"), unsealData, modelValidated);
 
             // Database
-            var connectionString = UnsealData(section.GetValue<string>("ConnectionString"));
+            var connectionString = unsealData(section.GetValue<string>("ConnectionString"));
             var snakeNaming = section.GetValue<bool>("SnakeNaming", false);
             var db = new SqlServerDatabase(connectionString, snakeNaming);
 
@@ -78,15 +47,16 @@ namespace com.etsoo.ServiceApp.Application
         /// </summary>
         /// <param name="services">Services dependency injection</param>
         /// <param name="configurationSection">Configuration section</param>
+        /// <param name="unsealData">Unseal data delegate</param>
         /// <param name="sslOnly">SSL only</param>
         /// <param name="modelValidated">Model DataAnnotations are validated or not</param>
-        public ServiceApp(IServiceCollection services, IConfigurationSection configurationSection, bool sslOnly = true, bool modelValidated = false)
-            : base(Create(configurationSection, modelValidated))
+        public ServiceApp(IServiceCollection services, IConfigurationSection configurationSection, Func<string, string> unsealData, bool sslOnly = true, bool modelValidated = false)
+            : base(Create(configurationSection, modelValidated, unsealData))
         {
             // Init the authentication service
             AuthService = new JwtService(services,
                 sslOnly,
-                configurationSection.GetSection("Jwt"), UnsealData);
+                configurationSection.GetSection("Jwt"), unsealData);
 
             // Hold the section
             Section = configurationSection;
