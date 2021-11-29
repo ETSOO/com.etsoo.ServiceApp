@@ -1,7 +1,9 @@
 ﻿using com.etsoo.CoreFramework.Application;
 using com.etsoo.CoreFramework.Authentication;
+using com.etsoo.CoreFramework.User;
 using com.etsoo.Utils.Crypto;
 using com.etsoo.Utils.Database;
+using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -95,5 +97,20 @@ namespace com.etsoo.ServiceApp.Application
         /// 本地化程序配置
         /// </summary>
         public new IServiceAppConfiguration Configuration => (IServiceAppConfiguration)base.Configuration;
+
+        /// <summary>
+        /// Override add system parameters
+        /// 重写添加系统参数
+        /// </summary>
+        /// <param name="user">Current user</param>
+        /// <param name="parameters">Parameers</param>
+        public override void AddSystemParameters(IServiceUser user, DynamicParameters parameters)
+        {
+            // Change to int from default string parameter
+            // Also possible to change global names
+            parameters.Add("CurrentUser", user.IdInt);
+            if (user.OrganizationInt != null)
+                parameters.Add("CurrentOrg", user.OrganizationInt);
+        }
     }
 }
