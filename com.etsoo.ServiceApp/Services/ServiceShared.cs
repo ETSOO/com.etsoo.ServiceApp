@@ -4,7 +4,7 @@ using com.etsoo.ServiceApp.Application;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 
-namespace com.etsoo.SmartERP.Services
+namespace com.etsoo.ServiceApp.Services
 {
     /// <summary>
     /// Shared service
