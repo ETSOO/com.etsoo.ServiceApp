@@ -8,5 +8,10 @@ namespace com.etsoo.ServiceApp.Application
     /// </summary>
     public interface IServiceAppConfiguration : IAppConfiguration
     {
+        /// <summary>
+        /// Service id
+        /// 服务编号
+        /// </summary>
+        int ServiceId { get; }
     }
 }
