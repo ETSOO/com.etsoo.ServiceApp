@@ -41,7 +41,7 @@ namespace com.etsoo.ServiceApp.Services
                 var passphrase = App.Configuration.ServiceId.ToString();
 
                 // Decrypt token
-                var token = Decrypt(tokenEncrypted, passphrase, true, 120);
+                var token = Decrypt(tokenEncrypted, passphrase, 120, true);
                 if (string.IsNullOrEmpty(token))
                 {
                     return ApplicationErrors.NoValidData.AsResult("Token");
