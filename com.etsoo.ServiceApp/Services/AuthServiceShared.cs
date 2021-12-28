@@ -69,6 +69,9 @@ namespace com.etsoo.ServiceApp.Services
 
                 if (result.Ok)
                 {
+                    // Copy data
+                    result.Data["DeviceId"] = coreUser.DeviceId;
+
                     var serviceUser = ServiceUser.Create(result.Data, ip, coreUser.Language, coreUser.Region);
                     if (serviceUser == null)
                     {
