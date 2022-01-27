@@ -55,7 +55,8 @@ namespace com.etsoo.ServiceApp.Services
                     return ApplicationErrors.TokenExpired.AsResult();
                 }
 
-                if (coreUser.Organization == null)
+                // Organization and Uid are required
+                if (coreUser.Organization == null || coreUser.Uid == null)
                 {
                     return ApplicationErrors.NoValidData.AsResult("Organization");
                 }
@@ -71,6 +72,7 @@ namespace com.etsoo.ServiceApp.Services
                 {
                     // Copy data
                     result.Data["DeviceId"] = coreUser.DeviceId;
+                    result.Data["Uid"] = coreUser.Uid;
 
                     var serviceUser = ServiceUser.Create(result.Data, ip, coreUser.Language, coreUser.Region);
                     if (serviceUser == null)

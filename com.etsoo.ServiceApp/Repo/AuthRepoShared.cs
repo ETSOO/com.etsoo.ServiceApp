@@ -32,6 +32,7 @@ namespace com.etsoo.ServiceApp.Repo
             // Parameters
             var parameters = new DynamicParameters();
             parameters.Add("User", coreUser.IdInt);
+            parameters.Add("UserUid", coreUser.Uid);
             parameters.Add("UserName", coreUser.Name);
             parameters.Add("Organization", coreUser.Organization);
             parameters.Add("OrganizationName", coreUser.OrganizationName);
