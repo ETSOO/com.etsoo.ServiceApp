@@ -18,6 +18,7 @@
 	<RepositoryUrl>https://github.com/ETSOO/com.etsoo.ServiceApp</RepositoryUrl>
 	<SignAssembly>True</SignAssembly>
 	<AssemblyOriginatorKeyFile>etsoo.snk</AssemblyOriginatorKeyFile>
+	<PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
