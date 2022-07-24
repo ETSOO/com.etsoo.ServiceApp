@@ -1,7 +1,7 @@
 ﻿using com.etsoo.CoreFramework.Application;
 using com.etsoo.CoreFramework.Authentication;
 using com.etsoo.CoreFramework.User;
-using com.etsoo.Utils.Database;
+using com.etsoo.Database;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
