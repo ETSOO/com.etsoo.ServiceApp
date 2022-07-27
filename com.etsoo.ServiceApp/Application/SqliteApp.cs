@@ -2,6 +2,7 @@
 using com.etsoo.CoreFramework.Authentication;
 using com.etsoo.CoreFramework.User;
 using com.etsoo.Database;
+using com.etsoo.Utils.Crypto;
 using Dapper;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
@@ -15,13 +16,13 @@ namespace com.etsoo.ServiceApp.Application
     /// </summary>
     public record SqliteApp : CoreApplication<SqliteConnection>, ISqliteApp
     {
-        private static (ServiceAppConfiguration, IDatabase<SqliteConnection>) Create(IConfigurationSection section, bool modelValidated, Func<string, string> unsealData)
+        private static (ServiceAppConfiguration, IDatabase<SqliteConnection>) Create(IConfigurationSection section, bool modelValidated, Func<string, string>? unsealData)
         {
             // App configuration
             var config = new ServiceAppConfiguration(section.GetSection("Configuration"), unsealData, modelValidated);
 
             // Database
-            var connectionString = unsealData(section.GetValue<string>("ConnectionString"));
+            var connectionString = CryptographyUtils.UnsealData(section.GetValue<string>("ConnectionString"), unsealData);
             var snakeNaming = section.GetValue("SnakeNaming", false);
             var db = new SqliteDatabase(connectionString, snakeNaming);
 
@@ -48,15 +49,12 @@ namespace com.etsoo.ServiceApp.Application
         /// <param name="services">Services dependency injection</param>
         /// <param name="configurationSection">Configuration section</param>
         /// <param name="unsealData">Unseal data delegate</param>
-        /// <param name="sslOnly">SSL only</param>
         /// <param name="modelValidated">Model DataAnnotations are validated or not</param>
-        public SqliteApp(IServiceCollection services, IConfigurationSection configurationSection, Func<string, string> unsealData, bool sslOnly = true, bool modelValidated = false)
+        public SqliteApp(IServiceCollection services, IConfigurationSection configurationSection, Func<string, string>? unsealData, bool modelValidated = false)
             : base(Create(configurationSection, modelValidated, unsealData))
         {
             // Init the authentication service
-            AuthService = new JwtService(services,
-                sslOnly,
-                configurationSection.GetSection("Jwt"), unsealData);
+            AuthService = new JwtService(services, configurationSection.GetSection("Jwt"), unsealData);
 
             // Hold the section
             Section = configurationSection;
