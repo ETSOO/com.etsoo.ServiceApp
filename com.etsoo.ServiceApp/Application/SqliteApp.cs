@@ -3,19 +3,19 @@ using com.etsoo.CoreFramework.Authentication;
 using com.etsoo.CoreFramework.User;
 using com.etsoo.Database;
 using Dapper;
-using Microsoft.Data.SqlClient;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace com.etsoo.ServiceApp.Application
 {
     /// <summary>
-    /// SmartERP service application
-    /// 司友云ERP服务程序
+    /// Sqlite application
+    /// Sqlite 程序
     /// </summary>
-    public record ServiceApp : CoreApplication<SqlConnection>, IServiceApp
+    public record SqliteApp : CoreApplication<SqliteConnection>, ISqliteApp
     {
-        private static (ServiceAppConfiguration, IDatabase<SqlConnection>) Create(IConfigurationSection section, bool modelValidated, Func<string, string> unsealData)
+        private static (ServiceAppConfiguration, IDatabase<SqliteConnection>) Create(IConfigurationSection section, bool modelValidated, Func<string, string> unsealData)
         {
             // App configuration
             var config = new ServiceAppConfiguration(section.GetSection("Configuration"), unsealData, modelValidated);
@@ -23,7 +23,7 @@ namespace com.etsoo.ServiceApp.Application
             // Database
             var connectionString = unsealData(section.GetValue<string>("ConnectionString"));
             var snakeNaming = section.GetValue("SnakeNaming", false);
-            var db = new SqlServerDatabase(connectionString, snakeNaming);
+            var db = new SqliteDatabase(connectionString, snakeNaming);
 
             // Return
             return (config, db);
@@ -50,7 +50,7 @@ namespace com.etsoo.ServiceApp.Application
         /// <param name="unsealData">Unseal data delegate</param>
         /// <param name="sslOnly">SSL only</param>
         /// <param name="modelValidated">Model DataAnnotations are validated or not</param>
-        public ServiceApp(IServiceCollection services, IConfigurationSection configurationSection, Func<string, string> unsealData, bool sslOnly = true, bool modelValidated = false)
+        public SqliteApp(IServiceCollection services, IConfigurationSection configurationSection, Func<string, string> unsealData, bool sslOnly = true, bool modelValidated = false)
             : base(Create(configurationSection, modelValidated, unsealData))
         {
             // Init the authentication service
