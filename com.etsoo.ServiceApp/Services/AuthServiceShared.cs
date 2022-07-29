@@ -8,6 +8,10 @@ using System.Net;
 
 namespace com.etsoo.ServiceApp.Services
 {
+    /// <summary>
+    /// Shared authorization service
+    /// 共享的授权服务
+    /// </summary>
     public class AuthServiceShared : ServiceShared<AuthRepoShared>
     {
         private const string TokenName = "Token";
