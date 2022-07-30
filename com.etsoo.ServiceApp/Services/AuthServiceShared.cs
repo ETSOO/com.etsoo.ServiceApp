@@ -14,10 +14,6 @@ namespace com.etsoo.ServiceApp.Services
     /// </summary>
     public class AuthServiceShared : ServiceShared<AuthRepoShared>
     {
-        private const string TokenName = "Token";
-        private const string ServiceDeviceName = "ServiceDeviceId";
-        private const string SecondsName = "Seconds";
-
         /// <summary>
         /// Constructor
         /// 构造函数
@@ -83,14 +79,14 @@ namespace com.etsoo.ServiceApp.Services
                     {
                         return ApplicationErrors.NoUserFound.AsResult();
                     }
-                    result.Data[TokenName] = App.AuthService.CreateAccessToken(serviceUser);
+                    result.Data[Constants.TokenName] = App.AuthService.CreateAccessToken(serviceUser);
 
                     // Service device id
                     var serviceDeviceId = await App.HashPasswordAsync(device);
-                    result.Data[ServiceDeviceName] = Encrypt(serviceDeviceId, passphrase, 1);
+                    result.Data[Constants.ServiceDeviceName] = Encrypt(serviceDeviceId, passphrase, 1);
 
                     // Expiry seconds
-                    result.Data[SecondsName] = App.AuthService.AccessTokenMinutes * 60;
+                    result.Data[Constants.SecondsName] = App.AuthService.AccessTokenMinutes * 60;
 
                     // Remove user id to avoid information leaking
                     result.Data.Remove("Id");

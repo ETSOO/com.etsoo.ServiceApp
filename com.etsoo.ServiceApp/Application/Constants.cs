@@ -12,6 +12,21 @@
         public const string RefreshTokenHeaderName = "SmartERPRefreshToken";
 
         /// <summary>
+        /// Token item name
+        /// </summary>
+        public const string TokenName = "Token";
+
+        /// <summary>
+        /// Service device item name
+        /// </summary>
+        public const string ServiceDeviceName = "ServiceDeviceId";
+
+        /// <summary>
+        /// Token expiry seconds item name
+        /// </summary>
+        public const string SecondsName = "Seconds";
+
+        /// <summary>
         /// Current user id parameter name
         /// </summary>
         public const string CurrentUserField = "CurrentUser";
