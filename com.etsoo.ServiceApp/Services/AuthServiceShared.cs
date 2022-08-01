@@ -30,7 +30,7 @@ namespace com.etsoo.ServiceApp.Services
         /// 异步交换令牌
         /// </summary>
         /// <param name="tokenEncrypted">Token encrypted</param>
-        /// <param name="device">Device identifier</param>
+        /// <param name="device">Device identifier (readable name)</param>
         /// <param name="ip">IP</param>
         /// <returns>Result</returns>
         public async Task<IActionResult> ExchangeTokenAsync(string tokenEncrypted, string device, IPAddress ip)
