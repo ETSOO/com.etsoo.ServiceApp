@@ -3,7 +3,6 @@ using com.etsoo.CoreFramework.Authentication;
 using com.etsoo.CoreFramework.User;
 using com.etsoo.Database;
 using com.etsoo.Utils.Crypto;
-using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -73,13 +72,12 @@ namespace com.etsoo.ServiceApp.Application
         /// </summary>
         /// <param name="user">Current user</param>
         /// <param name="parameters">Parameers</param>
-        public override void AddSystemParameters(IServiceUser user, DynamicParameters parameters)
+        public override void AddSystemParameters(IServiceUser user, IDbParameters parameters)
         {
             // Change to int from default string parameter
             // Also possible to change global names
             parameters.Add(Constants.CurrentUserField, user.IdInt);
-            if (user.OrganizationInt != null)
-                parameters.Add(Constants.CurrentOrgField, user.OrganizationInt);
+            parameters.Add(Constants.CurrentOrgField, user.OrganizationInt);
         }
     }
 }

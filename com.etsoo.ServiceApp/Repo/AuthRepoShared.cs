@@ -1,7 +1,7 @@
 ﻿using com.etsoo.CoreFramework.User;
+using com.etsoo.Database;
 using com.etsoo.ServiceApp.Application;
 using com.etsoo.Utils.Actions;
-using Dapper;
 
 namespace com.etsoo.ServiceApp.Repo
 {
@@ -30,7 +30,7 @@ namespace com.etsoo.ServiceApp.Repo
         public async Task<IActionResult> ExchangeTokenAsync(CurrentUser coreUser)
         {
             // Parameters
-            var parameters = new DynamicParameters();
+            var parameters = new DbParameters();
             parameters.Add("User", coreUser.IdInt);
             parameters.Add("UserUid", coreUser.Uid);
             parameters.Add("UserName", coreUser.Name);

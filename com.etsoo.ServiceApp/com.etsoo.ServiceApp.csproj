@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
 	<EnablePreviewFeatures>true</EnablePreviewFeatures>
 	<LangVersion>preview</LangVersion>
-	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 	<Version>1.0.42</Version>
 	<Authors>ETSOO SmartERP NextGen Team</Authors>
 	<Company>ETSOO</Company>
