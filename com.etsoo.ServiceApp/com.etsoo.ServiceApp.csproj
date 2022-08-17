@@ -7,7 +7,7 @@
 	<EnablePreviewFeatures>true</EnablePreviewFeatures>
 	<LangVersion>preview</LangVersion>
 	<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
-	<Version>1.0.43</Version>
+	<Version>1.0.44</Version>
 	<Authors>ETSOO SmartERP NextGen Team</Authors>
 	<Company>ETSOO</Company>
 	<Description>ETSOO SmartERP NextGen service applications shared framework</Description>
@@ -29,9 +29,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="com.etsoo.CoreFramework" Version="1.2.25" />
+    <PackageReference Include="com.etsoo.CoreFramework" Version="1.2.28" />
     <PackageReference Include="com.etsoo.UserAgentParser" Version="1.0.7" />
-    <PackageReference Include="com.etsoo.Utils" Version="1.1.30" />
+    <PackageReference Include="com.etsoo.Utils" Version="1.1.32" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.0.0" />
   </ItemGroup>
 
