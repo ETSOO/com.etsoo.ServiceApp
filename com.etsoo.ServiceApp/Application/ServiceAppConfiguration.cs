@@ -18,7 +18,7 @@ namespace com.etsoo.ServiceApp.Application
         /// <param name="section">Configuration section</param>
         /// <param name="secureManager">Secure manager</param>
         /// <param name="modelValidated">Model DataAnnotations are validated or not</param>
-        public ServiceAppConfiguration(IConfigurationSection section, Func<string, string>? secureManager, bool modelValidated = false) : base(section, secureManager, modelValidated)
+        public ServiceAppConfiguration(IConfigurationSection section, Func<string, string, string>? secureManager, bool modelValidated = false) : base(section, secureManager, modelValidated)
         {
             ServiceId = section.GetValue<int>("ServiceId");
         }

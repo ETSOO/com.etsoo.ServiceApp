@@ -15,13 +15,14 @@ namespace com.etsoo.ServiceApp.Application
     /// </summary>
     public record ServiceApp : CoreApplication<SqlConnection>, IServiceApp
     {
-        private static (ServiceAppConfiguration, IDatabase<SqlConnection>) Create(IConfigurationSection section, bool modelValidated, Func<string, string>? unsealData)
+        private static (ServiceAppConfiguration, IDatabase<SqlConnection>) Create(IConfigurationSection section, bool modelValidated, Func<string, string, string>? unsealData)
         {
             // App configuration
             var config = new ServiceAppConfiguration(section.GetSection("Configuration"), unsealData, modelValidated);
 
             // Database
-            var connectionString = CryptographyUtils.UnsealData(section.GetValue<string>("ConnectionString"), unsealData);
+            var field = "ConnectionString";
+            var connectionString = CryptographyUtils.UnsealData(field, section.GetValue<string>(field), unsealData);
             var snakeNaming = section.GetValue("SnakeNaming", false);
             var db = new SqlServerDatabase(connectionString, snakeNaming);
 
@@ -50,7 +51,7 @@ namespace com.etsoo.ServiceApp.Application
         /// <param name="unsealData">Unseal data delegate</param>
         /// <param name="sslOnly">SSL only</param>
         /// <param name="modelValidated">Model DataAnnotations are validated or not</param>
-        public ServiceApp(IServiceCollection services, IConfigurationSection configurationSection, Func<string, string>? unsealData, bool modelValidated = false)
+        public ServiceApp(IServiceCollection services, IConfigurationSection configurationSection, Func<string, string, string>? unsealData, bool modelValidated = false)
             : base(Create(configurationSection, modelValidated, unsealData))
         {
             // Init the authentication service
