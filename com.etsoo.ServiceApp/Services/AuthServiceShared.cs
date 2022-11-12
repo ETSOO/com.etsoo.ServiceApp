@@ -49,6 +49,11 @@ namespace com.etsoo.ServiceApp.Services
 
                 // Validate the token from core system first
                 var (claims, expired, _, _) = App.AuthService.ValidateToken(token, $"Service{App.Configuration.ServiceId}");
+                if (claims == null)
+                {
+                    return ApplicationErrors.NoValidData.AsResult("Claims");
+                }
+
                 var coreUser = CurrentUser.Create(claims);
                 if (coreUser == null || expired)
                 {

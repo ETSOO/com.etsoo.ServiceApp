@@ -15,6 +15,21 @@ namespace com.etsoo.ServiceApp.Application
     /// </summary>
     public record ServiceApp : CoreApplication<SqlConnection>, IServiceApp
     {
+        /// <summary>
+        /// Get secret data
+        /// 获取私密数据
+        /// </summary>
+        /// <returns>Result</returns>
+        /// <exception cref="ApplicationException"></exception>
+        protected new static string GetSecretData()
+        {
+            var guid = Environment.GetEnvironmentVariable(AppName, EnvironmentVariableTarget.Machine);
+            if (string.IsNullOrEmpty(guid)) throw new ApplicationException($"Secret data for {AppName} is not defined");
+            guid = guid.Replace("-", "");
+            guid = (char)((guid[0] + guid.Last()) / 2) + guid[2..] + AppName;
+            return guid;
+        }
+
         private static (ServiceAppConfiguration, IDatabase<SqlConnection>) Create(IConfigurationSection section, bool modelValidated, Func<string, string, string>? unsealData)
         {
             // App configuration

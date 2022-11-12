@@ -1,13 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	  <EnablePreviewFeatures>true</EnablePreviewFeatures>
-	  <LangVersion>preview</LangVersion>
 	  <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
-	  <Version>1.0.59</Version>
+	  <Version>1.0.60</Version>
 	  <Authors>ETSOO SmartERP NextGen Team</Authors>
 	  <Company>ETSOO / 亿速思维</Company>
 	  <Description>ETSOO Service Application Framework
@@ -30,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="com.etsoo.CoreFramework" Version="1.2.45" />
+    <PackageReference Include="com.etsoo.CoreFramework" Version="1.2.47" />
     <PackageReference Include="com.etsoo.UserAgentParser" Version="1.0.9" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.0.1" />
   </ItemGroup>
