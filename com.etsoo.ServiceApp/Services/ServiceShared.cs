@@ -10,14 +10,17 @@ namespace com.etsoo.ServiceApp.Services
     /// Shared service
     /// 共享的服务
     /// </summary>
+    /// <typeparam name="A">Generic application</typeparam>
     /// <typeparam name="R">Generic repository</typeparam>
-    public abstract class ServiceShared<R> : ServiceBase<SqlConnection, R> where R : IRepoBase
+    public abstract class ServiceShared<A, R> : ServiceBase<SqlConnection, R>
+        where A : IServiceApp
+        where R : IRepoBase
     {
         /// <summary>
         /// Override App, change its type
         /// 重写App，修改类型
         /// </summary>
-        protected override IServiceApp App { get; }
+        protected new A App { get; }
 
         /// <summary>
         /// Constructor
@@ -26,7 +29,7 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="app">Application</param>
         /// <param name="repo">Repository</param>
         /// <param name="logger">Logger</param>
-        protected ServiceShared(IServiceApp app, R repo, ILogger logger)
+        protected ServiceShared(A app, R repo, ILogger logger)
             : base(app, repo, logger)
         {
             App = app;

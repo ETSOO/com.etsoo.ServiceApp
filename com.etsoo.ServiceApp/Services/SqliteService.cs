@@ -10,14 +10,17 @@ namespace com.etsoo.ServiceApp.Services
     /// Sqlite service
     /// Sqlite 共享的服务
     /// </summary>
+    /// <typeparam name="A">Generic application</typeparam>
     /// <typeparam name="R">Generic repository</typeparam>
-    public abstract class SqliteService<R> : ServiceBase<SqliteConnection, R> where R : IRepoBase
+    public abstract class SqliteService<A, R> : ServiceBase<SqliteConnection, R>
+        where A : ISqliteApp
+        where R : IRepoBase
     {
         /// <summary>
         /// Override App, change its type
         /// 重写App，修改类型
         /// </summary>
-        protected override ISqliteApp App { get; }
+        protected new A App { get; }
 
         /// <summary>
         /// Constructor
@@ -26,7 +29,7 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="app">Application</param>
         /// <param name="repo">Repository</param>
         /// <param name="logger">Logger</param>
-        protected SqliteService(ISqliteApp app, R repo, ILogger logger)
+        protected SqliteService(A app, R repo, ILogger logger)
             : base(app, repo, logger)
         {
             App = app;

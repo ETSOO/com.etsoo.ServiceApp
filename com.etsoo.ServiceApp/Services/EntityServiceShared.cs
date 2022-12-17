@@ -11,21 +11,27 @@ namespace com.etsoo.ServiceApp.Services
     /// Shared entity service
     /// 共享的实体服务
     /// </summary>
+    /// <typeparam name="A">Generic application</typeparam>
+    /// <typeparam name="U">Generic user</typeparam>
     /// <typeparam name="R">Generic repository</typeparam>
     /// <typeparam name="T">Generic id type</typeparam>
-    public abstract class EntityServiceShared<R, T> : EntityServiceBase<SqlConnection, R, T> where R : IEntityRepo<T> where T : struct
+    public abstract class EntityServiceShared<A, U, R, T> : EntityServiceBase<SqlConnection, R, T>
+        where A : IServiceApp
+        where U : IServiceUser
+        where R : IEntityRepo<T>
+        where T : struct
     {
         /// <summary>
         /// Override App, change its type
         /// 重写App，修改类型
         /// </summary>
-        protected override IServiceApp App { get; }
+        protected new A App { get; }
 
         /// <summary>
         /// Override User, change its type
         /// 重写User，修改类型
         /// </summary>
-        protected override IServiceUser User { get; }
+        protected new U User { get; }
 
         /// <summary>
         /// Constructor
@@ -35,7 +41,7 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="user">User</param>
         /// <param name="repo">Repository</param>
         /// <param name="logger">Logger</param>
-        protected EntityServiceShared(IServiceApp app, IServiceUser user, R repo, ILogger logger)
+        protected EntityServiceShared(A app, U user, R repo, ILogger logger)
             : base(app, user, repo, logger)
         {
             App = app;

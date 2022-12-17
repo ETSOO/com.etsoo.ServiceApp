@@ -12,7 +12,9 @@ namespace com.etsoo.ServiceApp.Services
     /// Shared authorization service
     /// 共享的授权服务
     /// </summary>
-    public class AuthServiceShared : ServiceShared<AuthRepoShared>
+    /// <typeparam name="A">Generic application</typeparam>
+    public class AuthServiceShared<A> : ServiceShared<A, AuthRepoShared>
+        where A : IServiceApp
     {
         /// <summary>
         /// Constructor
@@ -20,7 +22,7 @@ namespace com.etsoo.ServiceApp.Services
         /// </summary>
         /// <param name="app">Application</param>
         /// <param name="logger">Logger</param>
-        public AuthServiceShared(IServiceApp app, ILogger logger)
+        public AuthServiceShared(A app, ILogger logger)
             : base(app, new AuthRepoShared(app), logger)
         {
         }
