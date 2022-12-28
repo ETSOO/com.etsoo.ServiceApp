@@ -38,14 +38,20 @@ namespace com.etsoo.ServiceApp.Services
         /// 构造函数
         /// </summary>
         /// <param name="app">Application</param>
-        /// <param name="user">User</param>
         /// <param name="repo">Repository</param>
         /// <param name="logger">Logger</param>
-        protected EntityServiceShared(A app, U user, R repo, ILogger logger)
-            : base(app, user, repo, logger)
+        protected EntityServiceShared(A app, R repo, ILogger logger)
+            : base(app, repo, logger)
         {
-            App = app;
-            User = user;
+            if (base.User is U uUser)
+            {
+                App = app;
+                User = uUser;
+            }
+            else
+            {
+                throw new ApplicationException("User Type Incompatible");
+            }
         }
     }
 }
