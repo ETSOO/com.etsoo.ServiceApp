@@ -21,7 +21,7 @@ namespace com.etsoo.ServiceApp.Services
         /// </summary>
         /// <param name="app">Application</param>
         /// <param name="logger">Logger</param>
-        public AuthServiceShared(A app, ILogger logger)
+        public AuthServiceShared(A app, ILogger<AuthServiceShared<A>> logger)
             : base(app, new AuthRepoShared(app), logger)
         {
         }
