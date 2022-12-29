@@ -13,8 +13,7 @@ namespace com.etsoo.ServiceApp.Services
     /// 共享的授权服务
     /// </summary>
     /// <typeparam name="A">Generic application</typeparam>
-    public class AuthServiceShared<A> : ServiceShared<A, AuthRepoShared>
-        where A : IServiceApp
+    public class AuthServiceShared<A> : ServiceShared<A, AuthRepoShared>, IAuthServiceShared where A : IServiceApp
     {
         /// <summary>
         /// Constructor
