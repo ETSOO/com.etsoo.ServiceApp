@@ -7,6 +7,11 @@
     public static class Constants
     {
         /// <summary>
+        /// Content-Disposition header item name
+        /// </summary>
+        public const string ContentDispositionHeaderName = "Content-Disposition";
+
+        /// <summary>
         /// Refresh token header item name
         /// </summary>
         public const string RefreshTokenHeaderName = "SmartERPRefreshToken";
