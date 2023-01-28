@@ -119,7 +119,8 @@ namespace com.etsoo.ServiceApp.Services
         /// <returns>Result</returns>
         public async Task<IActionResult> ExchangeTokenAsync(string tokenEncrypted, string device, IPAddress ip)
         {
-            return await ExchangeTokenAsync<IServiceUser>(tokenEncrypted, device, ip);
+            // ServiceUser not IServiceUser, otherwise is always null
+            return await ExchangeTokenAsync<ServiceUser>(tokenEncrypted, device, ip);
         }
     }
 }
