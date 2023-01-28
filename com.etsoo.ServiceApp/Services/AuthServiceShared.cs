@@ -34,7 +34,7 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="device">Device identifier (readable name)</param>
         /// <param name="ip">IP</param>
         /// <returns>Result</returns>
-        public async Task<IActionResult> ExchangeTokenAsync(string tokenEncrypted, string device, IPAddress ip)
+        public async Task<IActionResult> ExchangeTokenAsync<T>(string tokenEncrypted, string device, IPAddress ip) where T : class, IServiceUser
         {
             try
             {
@@ -80,7 +80,7 @@ namespace com.etsoo.ServiceApp.Services
                     result.Data["DeviceId"] = coreUser.DeviceId;
                     result.Data["Uid"] = coreUser.Uid;
 
-                    var serviceUser = ServiceUser.Create(result.Data, ip, coreUser.Language, coreUser.Region);
+                    var serviceUser = T.Create(result.Data, ip, coreUser.Language, coreUser.Region) as T;
                     if (serviceUser == null)
                     {
                         return ApplicationErrors.NoUserFound.AsResult();
@@ -106,6 +106,19 @@ namespace com.etsoo.ServiceApp.Services
                 // Return action result
                 return LogException(ex);
             }
+        }
+
+        /// <summary>
+        /// Async exchange token
+        /// 异步交换令牌
+        /// </summary>
+        /// <param name="tokenEncrypted">Token encrypted</param>
+        /// <param name="device">Device identifier (readable name)</param>
+        /// <param name="ip">IP</param>
+        /// <returns>Result</returns>
+        public async Task<IActionResult> ExchangeTokenAsync(string tokenEncrypted, string device, IPAddress ip)
+        {
+            return await ExchangeTokenAsync<IServiceUser>(tokenEncrypted, device, ip);
         }
     }
 }
