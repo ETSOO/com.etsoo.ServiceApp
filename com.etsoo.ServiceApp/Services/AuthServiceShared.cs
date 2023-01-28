@@ -85,6 +85,7 @@ namespace com.etsoo.ServiceApp.Services
                     var serviceUser = T.Create(result.Data, ip, coreUser.Language, coreUser.Region);
                     if (serviceUser == null)
                     {
+                        Logger.LogDebug("Create user {type} failed with {result}", typeof(T), result);
                         return ApplicationErrors.NoUserFound.AsResult();
                     }
                     result.Data[Constants.TokenName] = App.AuthService.CreateAccessToken(serviceUser);
@@ -98,7 +99,7 @@ namespace com.etsoo.ServiceApp.Services
 
                     // Remove user id to avoid information leaking
                     result.Data.Remove("Id");
-                    result.Data.Remove("OrganizationId");
+                    result.Data.Remove("Organization");
                 }
 
                 return result;
