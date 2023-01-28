@@ -81,7 +81,8 @@ namespace com.etsoo.ServiceApp.Services
                     result.Data["DeviceId"] = coreUser.DeviceId;
                     result.Data["Uid"] = coreUser.Uid;
 
-                    var serviceUser = T.Create(result.Data, ip, coreUser.Language, coreUser.Region) as T;
+                    // T.Create result is an interface, cannot cast back to T
+                    var serviceUser = T.Create(result.Data, ip, coreUser.Language, coreUser.Region);
                     if (serviceUser == null)
                     {
                         return ApplicationErrors.NoUserFound.AsResult();
