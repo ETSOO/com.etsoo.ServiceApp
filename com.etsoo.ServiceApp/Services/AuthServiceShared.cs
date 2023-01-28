@@ -30,6 +30,7 @@ namespace com.etsoo.ServiceApp.Services
         /// Async exchange token
         /// 异步交换令牌
         /// </summary>
+        /// <typeparam name="T">Generic user type</typeparam>
         /// <param name="tokenEncrypted">Token encrypted</param>
         /// <param name="device">Device identifier (readable name)</param>
         /// <param name="ip">IP</param>
