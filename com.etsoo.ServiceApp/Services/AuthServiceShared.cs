@@ -85,7 +85,7 @@ namespace com.etsoo.ServiceApp.Services
                     var serviceUser = T.Create(result.Data, ip, coreUser.Language, coreUser.Region);
                     if (serviceUser == null)
                     {
-                        Logger.LogDebug("Create user {type} failed with {result}", typeof(T), result);
+                        Logger.LogDebug("Create user {type} failed with {result}", typeof(T), result.Data);
                         return ApplicationErrors.NoUserFound.AsResult();
                     }
                     result.Data[Constants.TokenName] = App.AuthService.CreateAccessToken(serviceUser);
