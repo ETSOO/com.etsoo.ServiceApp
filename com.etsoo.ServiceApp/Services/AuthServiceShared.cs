@@ -34,8 +34,9 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="tokenEncrypted">Token encrypted</param>
         /// <param name="device">Device identifier (readable name)</param>
         /// <param name="ip">IP</param>
+        /// <param name="creator">User creator</param>
         /// <returns>Result</returns>
-        public async Task<IActionResult> ExchangeTokenAsync<T>(string tokenEncrypted, string device, IPAddress ip) where T : class, IServiceUser
+        public async Task<IActionResult> ExchangeTokenAsync<T>(string tokenEncrypted, string device, IPAddress ip, UserCreatorDelegate<T> creator) where T : IServiceUser
         {
             try
             {
@@ -82,7 +83,7 @@ namespace com.etsoo.ServiceApp.Services
                     result.Data["Uid"] = coreUser.Uid;
 
                     // T.Create result is an interface, cannot cast back to T
-                    var serviceUser = T.Create(result.Data, ip, coreUser.Language, coreUser.Region);
+                    var serviceUser = creator(result.Data, ip, coreUser.Language, coreUser.Region);
                     if (serviceUser == null)
                     {
                         Logger.LogDebug("Create user {type} failed with {result}", typeof(T), result.Data);
@@ -122,7 +123,7 @@ namespace com.etsoo.ServiceApp.Services
         public async Task<IActionResult> ExchangeTokenAsync(string tokenEncrypted, string device, IPAddress ip)
         {
             // ServiceUser not IServiceUser, otherwise is always null
-            return await ExchangeTokenAsync<ServiceUser>(tokenEncrypted, device, ip);
+            return await ExchangeTokenAsync(tokenEncrypted, device, ip, ServiceUser.CreateFromData);
         }
     }
 }

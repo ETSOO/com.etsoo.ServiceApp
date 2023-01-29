@@ -19,8 +19,9 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="tokenEncrypted">Token encrypted</param>
         /// <param name="device">Device identifier (readable name)</param>
         /// <param name="ip">IP</param>
+        /// <param name="creator">User creator</param>
         /// <returns>Result</returns>
-        Task<IActionResult> ExchangeTokenAsync<T>(string tokenEncrypted, string device, IPAddress ip) where T : class, IServiceUser;
+        Task<IActionResult> ExchangeTokenAsync<T>(string tokenEncrypted, string device, IPAddress ip, UserCreatorDelegate<T> creator) where T : IServiceUser;
 
         /// <summary>
         /// Async exchange token
