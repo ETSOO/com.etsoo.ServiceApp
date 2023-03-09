@@ -15,7 +15,7 @@ namespace com.etsoo.ServiceApp.Repo
         /// Override App, change its type
         /// 重写App，修改类型
         /// </summary>
-        protected override IServiceApp App { get; }
+        protected readonly new IServiceApp App;
 
         /// <summary>
         /// Constructor

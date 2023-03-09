@@ -20,7 +20,7 @@ namespace com.etsoo.ServiceApp.Services
         /// Override App, change its type
         /// 重写App，修改类型
         /// </summary>
-        protected new A App { get; }
+        protected new readonly A App;
 
         /// <summary>
         /// Constructor
@@ -29,8 +29,9 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="app">Application</param>
         /// <param name="repo">Repository</param>
         /// <param name="logger">Logger</param>
-        protected ServiceShared(A app, R repo, ILogger logger)
-            : base(app, repo, logger)
+        /// <param name="cancellationToken">Cancellation token</param>
+        protected ServiceShared(A app, R repo, ILogger logger, CancellationToken cancellationToken = default)
+            : base(app, repo, logger, cancellationToken)
         {
             App = app;
         }
