@@ -15,7 +15,7 @@ namespace com.etsoo.ServiceApp.Services
     /// <typeparam name="U">Generic user</typeparam>
     /// <typeparam name="R">Generic repository</typeparam>
     /// <typeparam name="T">Generic id type</typeparam>
-    public abstract class EntityServiceShared<A, U, R, T> : EntityServiceBase<SqlConnection, R, T>
+    public abstract class EntityServiceShared<A, U, R, T> : EntityServiceBase<SqlConnection, R, T, A>
         where A : IServiceApp
         where U : IServiceUser
         where R : IEntityRepo<T>

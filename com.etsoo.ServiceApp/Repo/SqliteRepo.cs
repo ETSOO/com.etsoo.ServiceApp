@@ -9,14 +9,8 @@ namespace com.etsoo.ServiceApp.Repo
     /// Sqlite repository
     /// Sqlite 共享仓库
     /// </summary>
-    public abstract class SqliteRepo : RepoBase<SqliteConnection>
+    public abstract class SqliteRepo : RepoBase<SqliteConnection, ISqliteApp>
     {
-        /// <summary>
-        /// Override App, change its type
-        /// 重写App，修改类型
-        /// </summary>
-        protected new readonly ISqliteApp App;
-
         /// <summary>
         /// Constructor
         /// 构造函数
@@ -27,7 +21,6 @@ namespace com.etsoo.ServiceApp.Repo
         protected SqliteRepo(ISqliteApp app, string flag, IServiceUser? user = null)
             : base(app, flag, user)
         {
-            App = app;
         }
     }
 }

@@ -9,14 +9,8 @@ namespace com.etsoo.ServiceApp.Repo
     /// Shared repository
     /// 共享仓库
     /// </summary>
-    public abstract class RepoShared : RepoBase<SqlConnection>
+    public abstract class RepoShared : RepoBase<SqlConnection, IServiceApp>
     {
-        /// <summary>
-        /// Override App, change its type
-        /// 重写App，修改类型
-        /// </summary>
-        protected readonly new IServiceApp App;
-
         /// <summary>
         /// Constructor
         /// 构造函数
@@ -27,7 +21,6 @@ namespace com.etsoo.ServiceApp.Repo
         protected RepoShared(IServiceApp app, string flag, IServiceUser? user = null)
             : base(app, flag, user)
         {
-            App = app;
         }
     }
 }

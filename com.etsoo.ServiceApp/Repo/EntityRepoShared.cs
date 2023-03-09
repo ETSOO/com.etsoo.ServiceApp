@@ -9,14 +9,8 @@ namespace com.etsoo.ServiceApp.Repo
     /// Shared entity repository
     /// 共享实体仓库
     /// </summary>
-    public abstract class EntityRepoShared<T> : EntityRepo<SqlConnection, T> where T : struct
+    public abstract class EntityRepoShared<T> : EntityRepo<SqlConnection, T, IServiceApp> where T : struct
     {
-        /// <summary>
-        /// Override App, change its type
-        /// 重写App，修改类型
-        /// </summary>
-        protected new readonly IServiceApp App;
-
         /// <summary>
         /// Constructor
         /// 构造函数
@@ -26,7 +20,6 @@ namespace com.etsoo.ServiceApp.Repo
         protected EntityRepoShared(IServiceApp app, string flag, IServiceUser? user)
             : base(app, flag, user)
         {
-            App = app;
         }
     }
 }

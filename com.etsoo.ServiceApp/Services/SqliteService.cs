@@ -12,16 +12,10 @@ namespace com.etsoo.ServiceApp.Services
     /// </summary>
     /// <typeparam name="A">Generic application</typeparam>
     /// <typeparam name="R">Generic repository</typeparam>
-    public abstract class SqliteService<A, R> : ServiceBase<SqliteConnection, R>
+    public abstract class SqliteService<A, R> : ServiceBase<SqliteConnection, R, A>
         where A : ISqliteApp
         where R : IRepoBase
     {
-        /// <summary>
-        /// Override App, change its type
-        /// 重写App，修改类型
-        /// </summary>
-        protected new readonly A App;
-
         /// <summary>
         /// Constructor
         /// 构造函数
@@ -33,7 +27,6 @@ namespace com.etsoo.ServiceApp.Services
         protected SqliteService(A app, R repo, ILogger logger, CancellationToken cancellationToken = default)
             : base(app, repo, logger, cancellationToken)
         {
-            App = app;
         }
     }
 }
