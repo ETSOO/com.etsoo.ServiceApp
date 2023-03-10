@@ -23,9 +23,8 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="app">Application</param>
         /// <param name="repo">Repository</param>
         /// <param name="logger">Logger</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        protected SqliteService(A app, R repo, ILogger logger, CancellationToken cancellationToken = default)
-            : base(app, repo, logger, cancellationToken)
+        protected SqliteService(A app, R repo, ILogger logger)
+            : base(app, repo, logger)
         {
         }
     }

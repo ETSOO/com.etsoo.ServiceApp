@@ -3,6 +3,8 @@ using com.etsoo.CoreFramework.User;
 using com.etsoo.ServiceApp.Application;
 using com.etsoo.ServiceApp.Repo;
 using com.etsoo.Utils.Actions;
+using com.etsoo.WebUtils;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Net;
 
@@ -21,8 +23,9 @@ namespace com.etsoo.ServiceApp.Services
         /// </summary>
         /// <param name="app">Application</param>
         /// <param name="logger">Logger</param>
-        public AuthServiceShared(A app, ILogger<AuthServiceShared<A>> logger)
-            : base(app, new AuthRepoShared(app), logger)
+        /// <param name="accessor">Http context accessor</param>
+        public AuthServiceShared(A app, ILogger<AuthServiceShared<A>> logger, IHttpContextAccessor accessor)
+            : base(app, new AuthRepoShared(app) { CancellationToken = accessor.CancellationToken() }, logger)
         {
         }
 
