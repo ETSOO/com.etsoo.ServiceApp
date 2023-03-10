@@ -18,9 +18,8 @@ namespace com.etsoo.ServiceApp.Repo
         /// <param name="app">Application</param>
         /// <param name="flag">Flag</param>
         /// <param name="user">Current user</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        protected SqliteRepo(ISqliteApp app, string flag, IServiceUser? user = null, CancellationToken cancellationToken = default)
-            : base(app, flag, user, cancellationToken)
+        protected SqliteRepo(ISqliteApp app, string flag, IServiceUser? user = null)
+            : base(app, flag, user)
         {
         }
     }

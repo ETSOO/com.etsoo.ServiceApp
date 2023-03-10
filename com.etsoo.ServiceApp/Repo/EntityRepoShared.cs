@@ -17,9 +17,8 @@ namespace com.etsoo.ServiceApp.Repo
         /// </summary>
         /// <param name="app">Application</param>
         /// <param name="flag">Flag</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        protected EntityRepoShared(IServiceApp app, string flag, IServiceUser? user, CancellationToken cancellationToken = default)
-            : base(app, flag, user, cancellationToken)
+        protected EntityRepoShared(IServiceApp app, string flag, IServiceUser? user)
+            : base(app, flag, user)
         {
         }
     }
