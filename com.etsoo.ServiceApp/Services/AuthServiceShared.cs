@@ -74,7 +74,7 @@ namespace com.etsoo.ServiceApp.Services
                     return ApplicationErrors.IPAddressChanged.AsResult();
                 }
 
-                var result = await Repo.ExchangeTokenAsync(coreUser, CancellationToken);
+                var result = await Repo.ExchangeTokenAsync(coreUser);
 
                 if (result.Ok)
                 {

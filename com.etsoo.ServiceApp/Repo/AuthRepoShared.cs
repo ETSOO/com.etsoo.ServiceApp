@@ -26,9 +26,8 @@ namespace com.etsoo.ServiceApp.Repo
         /// 异步交换令牌
         /// </summary>
         /// <param name="coreUser">Core user token</param>
-        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async Task<IActionResult> ExchangeTokenAsync(CurrentUser coreUser, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> ExchangeTokenAsync(CurrentUser coreUser)
         {
             // Parameters
             var parameters = new DbParameters();
@@ -39,7 +38,7 @@ namespace com.etsoo.ServiceApp.Repo
             parameters.Add("OrganizationName", coreUser.OrganizationName);
             parameters.Add("RoleValue", coreUser.RoleValue);
 
-            var command = CreateCommand(GetCommandName("exchange token"), parameters, cancellationToken: cancellationToken);
+            var command = CreateCommand(GetCommandName("exchange token"), parameters);
             return await QueryAsResultAsync(command);
         }
     }
