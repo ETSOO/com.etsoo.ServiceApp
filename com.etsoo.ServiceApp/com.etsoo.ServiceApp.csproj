@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="com.etsoo.CoreFramework" Version="1.2.93" />
+    <PackageReference Include="com.etsoo.CoreFramework" Version="1.2.94" />
     <PackageReference Include="com.etsoo.UserAgentParser" Version="1.0.10" />
   </ItemGroup>
 
