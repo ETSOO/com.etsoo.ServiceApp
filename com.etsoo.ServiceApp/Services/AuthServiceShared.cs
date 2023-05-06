@@ -95,8 +95,8 @@ namespace com.etsoo.ServiceApp.Services
                     result.Data[Constants.TokenName] = App.AuthService.CreateAccessToken(serviceUser);
 
                     // Service device id
-                    var serviceDeviceId = await App.HashPasswordAsync(device);
-                    result.Data[Constants.ServiceDeviceName] = Encrypt(serviceDeviceId, passphrase, 1);
+                    var serviceDeviceId = await App.HashPasswordAsync(passphrase + ":" + coreUser.Id);
+                    result.Data[Constants.ServiceDeviceName] = Encrypt(serviceDeviceId, device, 1);
 
                     // Expiry seconds
                     result.Data[Constants.SecondsName] = App.AuthService.AccessTokenMinutes * 60;
