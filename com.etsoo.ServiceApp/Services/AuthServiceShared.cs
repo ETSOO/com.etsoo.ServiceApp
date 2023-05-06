@@ -3,6 +3,7 @@ using com.etsoo.CoreFramework.User;
 using com.etsoo.ServiceApp.Application;
 using com.etsoo.ServiceApp.Repo;
 using com.etsoo.Utils.Actions;
+using com.etsoo.Utils.Crypto;
 using com.etsoo.WebUtils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -94,9 +95,10 @@ namespace com.etsoo.ServiceApp.Services
                     }
                     result.Data[Constants.TokenName] = App.AuthService.CreateAccessToken(serviceUser);
 
-                    // Service device id
-                    var serviceDeviceId = await App.HashPasswordAsync(passphrase + ":" + coreUser.Id);
-                    result.Data[Constants.ServiceDeviceName] = Encrypt(serviceDeviceId, device, 1);
+                    // Service passphase & device id
+                    var servicePassphrase = CryptographyUtils.CreateRandString(RandStringKind.All, 32).ToString();
+                    result.Data[Constants.ServiceDeviceName] = Encrypt(servicePassphrase, device, 1);
+                    result.Data[Constants.ServicePassphrase] = EncryptWeb(servicePassphrase, passphrase);
 
                     // Expiry seconds
                     result.Data[Constants.SecondsName] = App.AuthService.AccessTokenMinutes * 60;

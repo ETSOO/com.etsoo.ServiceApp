@@ -27,6 +27,11 @@
         public const string ServiceDeviceName = "ServiceDeviceId";
 
         /// <summary>
+        /// Service passphrase
+        /// </summary>
+        public const string ServicePassphrase = "ServicePassphrase";
+
+        /// <summary>
         /// Token expiry seconds item name
         /// </summary>
         public const string SecondsName = "Seconds";
