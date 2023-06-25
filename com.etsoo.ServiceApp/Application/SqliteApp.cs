@@ -3,6 +3,7 @@ using com.etsoo.CoreFramework.Authentication;
 using com.etsoo.CoreFramework.User;
 using com.etsoo.Database;
 using com.etsoo.Utils.Crypto;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,11 +51,12 @@ namespace com.etsoo.ServiceApp.Application
         /// <param name="configurationSection">Configuration section</param>
         /// <param name="unsealData">Unseal data delegate</param>
         /// <param name="modelValidated">Model DataAnnotations are validated or not</param>
-        public SqliteApp(IServiceCollection services, IConfigurationSection configurationSection, Func<string, string, string>? unsealData, bool modelValidated = false)
+        /// <param name="events">JWT events</param>
+        public SqliteApp(IServiceCollection services, IConfigurationSection configurationSection, Func<string, string, string>? unsealData, bool modelValidated = false, JwtBearerEvents? events = null)
             : base(Create(configurationSection, modelValidated, unsealData))
         {
             // Init the authentication service
-            AuthService = new JwtService(services, configurationSection.GetSection("Jwt"), unsealData);
+            AuthService = new JwtService(services, configurationSection.GetSection("Jwt"), unsealData, events: events);
 
             // Hold the section
             Section = configurationSection;
