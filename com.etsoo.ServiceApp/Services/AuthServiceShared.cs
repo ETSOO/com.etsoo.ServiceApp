@@ -18,6 +18,8 @@ namespace com.etsoo.ServiceApp.Services
     /// <typeparam name="A">Generic application</typeparam>
     public class AuthServiceShared<A> : ServiceShared<A, AuthRepoShared>, IAuthServiceShared where A : IServiceApp
     {
+        readonly CoreFramework.Authentication.IAuthService _authService;
+
         /// <summary>
         /// Constructor
         /// 构造函数
@@ -28,6 +30,8 @@ namespace com.etsoo.ServiceApp.Services
         public AuthServiceShared(A app, ILogger<AuthServiceShared<A>> logger, IHttpContextAccessor accessor)
             : base(app, new AuthRepoShared(app) { CancellationToken = accessor.CancellationToken() }, logger)
         {
+            if (app.AuthService == null) throw new NullReferenceException(nameof(app.AuthService));
+            _authService = app.AuthService;
         }
 
         /// <summary>
@@ -55,7 +59,7 @@ namespace com.etsoo.ServiceApp.Services
                 }
 
                 // Validate the token from core system first
-                var (claims, expired, _, _) = App.AuthService.ValidateToken(token, $"Service{App.Configuration.ServiceId}");
+                var (claims, expired, _, _) = _authService.ValidateToken(token, $"Service{App.Configuration.ServiceId}");
                 if (claims == null)
                 {
                     return ApplicationErrors.NoValidData.AsResult("Claims");
@@ -93,7 +97,7 @@ namespace com.etsoo.ServiceApp.Services
                         Logger.LogDebug("Create user {type} failed with {result}", typeof(T), result.Data);
                         return ApplicationErrors.NoUserFound.AsResult();
                     }
-                    result.Data[Constants.TokenName] = App.AuthService.CreateAccessToken(serviceUser);
+                    result.Data[Constants.TokenName] = _authService.CreateAccessToken(serviceUser);
 
                     // Service passphase & device id
                     var servicePassphrase = CryptographyUtils.CreateRandString(RandStringKind.All, 32).ToString();
@@ -101,7 +105,7 @@ namespace com.etsoo.ServiceApp.Services
                     result.Data[Constants.ServicePassphrase] = EncryptWeb(servicePassphrase, passphrase);
 
                     // Expiry seconds
-                    result.Data[Constants.SecondsName] = App.AuthService.AccessTokenMinutes * 60;
+                    result.Data[Constants.SecondsName] = _authService.AccessTokenMinutes * 60;
 
                     // Remove user id to avoid information leaking
                     result.Data.Remove("Id");

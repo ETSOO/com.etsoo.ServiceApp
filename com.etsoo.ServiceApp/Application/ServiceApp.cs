@@ -1,7 +1,4 @@
-﻿using com.etsoo.CoreFramework.Application;
-using com.etsoo.CoreFramework.Authentication;
-using com.etsoo.CoreFramework.User;
-using com.etsoo.Database;
+﻿using com.etsoo.Database;
 using com.etsoo.Utils.Crypto;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.SqlClient;
@@ -14,7 +11,7 @@ namespace com.etsoo.ServiceApp.Application
     /// SmartERP service application
     /// 司友云ERP服务程序
     /// </summary>
-    public record ServiceApp : CoreApplication<SqlConnection>, IServiceApp
+    public record ServiceApp : ServiceCommonApp<SqlConnection>, IServiceApp
     {
         private static (ServiceAppConfiguration, IDatabase<SqlConnection>) Create(IConfigurationSection section, bool modelValidated, Func<string, string, string>? unsealData)
         {
@@ -32,18 +29,6 @@ namespace com.etsoo.ServiceApp.Application
         }
 
         /// <summary>
-        /// Authentication service
-        /// 验证服务
-        /// </summary>
-        public IAuthService AuthService { get; init; }
-
-        /// <summary>
-        /// Configuration section
-        /// 配置区块
-        /// </summary>
-        public IConfigurationSection Section { get; init; }
-
-        /// <summary>
         /// Constructor
         /// 构造函数
         /// </summary>
@@ -54,33 +39,8 @@ namespace com.etsoo.ServiceApp.Application
         /// <param name="modelValidated">Model DataAnnotations are validated or not</param>
         /// <param name="events">JWT events</param>
         public ServiceApp(IServiceCollection services, IConfigurationSection configurationSection, Func<string, string, string>? unsealData, bool modelValidated = false, JwtBearerEvents? events = null)
-            : base(Create(configurationSection, modelValidated, unsealData))
+            : base(services, configurationSection, Create(configurationSection, modelValidated, unsealData), unsealData, events)
         {
-            // Init the authentication service
-            AuthService = new JwtService(services, configurationSection.GetSection("Jwt"), unsealData, events: events);
-
-            // Hold the section
-            Section = configurationSection;
-        }
-
-        /// <summary>
-        /// Application configuration localized
-        /// 本地化程序配置
-        /// </summary>
-        public new IServiceAppConfiguration Configuration => (IServiceAppConfiguration)base.Configuration;
-
-        /// <summary>
-        /// Override add system parameters
-        /// 重写添加系统参数
-        /// </summary>
-        /// <param name="user">Current user</param>
-        /// <param name="parameters">Parameers</param>
-        public override void AddSystemParameters(IServiceUser user, IDbParameters parameters)
-        {
-            // Change to int from default string parameter
-            // Also possible to change global names
-            parameters.Add(Constants.CurrentUserField, user.IdInt);
-            parameters.Add(Constants.CurrentOrgField, user.OrganizationInt);
         }
     }
 }
