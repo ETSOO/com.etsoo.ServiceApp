@@ -31,7 +31,7 @@ namespace com.etsoo.ServiceApp.Services
         /// Override User, change its type
         /// 重写User，修改类型
         /// </summary>
-        protected new U User { get; }
+        protected new U? User { get; }
 
         /// <summary>
         /// Constructor
@@ -43,9 +43,14 @@ namespace com.etsoo.ServiceApp.Services
         protected EntityServiceShared(A app, R repo, ILogger logger)
             : base(app, repo, logger)
         {
-            if (base.User is U uUser)
+            App = app;
+            if (base.User == null)
             {
-                App = app;
+                User = default;
+            }
+            else if (base.User is U uUser)
+            {
+
                 User = uUser;
             }
             else
