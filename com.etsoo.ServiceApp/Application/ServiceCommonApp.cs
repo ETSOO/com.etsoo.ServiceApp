@@ -2,6 +2,7 @@
 using com.etsoo.CoreFramework.Authentication;
 using com.etsoo.CoreFramework.User;
 using com.etsoo.Database;
+using com.etsoo.Utils;
 using com.etsoo.Utils.Crypto;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
@@ -102,6 +103,18 @@ namespace com.etsoo.ServiceApp.Application
         public string ExchangeData(string plainText)
         {
             return CryptographyUtils.AESEncrypt(plainText, GetExchangeKey(_encryptionKey, Configuration.ServiceId), 10);
+        }
+
+        /// <summary>
+        /// Async exchange object data encryption
+        /// 异步交换对象数据加密
+        /// </summary>
+        /// <typeparam name="T">Generic object type</typeparam>
+        /// <param name="obj">Object</param>
+        /// <returns>Result</returns>
+        public async Task<string> ExchangeDataAsync<T>(T obj)
+        {
+            return await SharedUtils.JsonSerializeAsync(obj, SharedUtils.JsonDefaultSerializerOptions);
         }
     }
 }

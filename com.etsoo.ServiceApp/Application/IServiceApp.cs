@@ -39,6 +39,15 @@ namespace com.etsoo.ServiceApp.Application
         /// <param name="plainText">Plain text</param>
         /// <returns>Result</returns>
         string ExchangeData(string plainText);
+
+        /// <summary>
+        /// Async exchange object data encryption
+        /// 异步交换对象数据加密
+        /// </summary>
+        /// <typeparam name="T">Generic object type</typeparam>
+        /// <param name="obj">Object</param>
+        /// <returns>Result</returns>
+        Task<string> ExchangeDataAsync<T>(T obj);
     }
 
     /// <summary>
