@@ -31,6 +31,14 @@ namespace com.etsoo.ServiceApp.Application
         /// 配置区块
         /// </summary>
         IConfigurationSection Section { get; init; }
+
+        /// <summary>
+        /// Exchange data encryption
+        /// 交换数据加密
+        /// </summary>
+        /// <param name="plainText">Plain text</param>
+        /// <returns>Result</returns>
+        string ExchangeData(string plainText);
     }
 
     /// <summary>

@@ -2,6 +2,7 @@
 using com.etsoo.CoreFramework.Authentication;
 using com.etsoo.CoreFramework.User;
 using com.etsoo.Database;
+using com.etsoo.Utils.Crypto;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +17,8 @@ namespace com.etsoo.ServiceApp.Application
     /// <typeparam name="C">Generic database type</typeparam>
     public abstract record ServiceCommonApp<C> : CoreApplication<C>, IServiceBaseApp<C> where C : DbConnection
     {
+        readonly string _encryptionKey;
+
         /// <summary>
         /// Authentication service
         /// 验证服务
@@ -53,12 +56,27 @@ namespace com.etsoo.ServiceApp.Application
             // Hold the section
             Section = configurationSection;
 
+            string? encryptionKey;
+
             var jwtSection = configurationSection.GetSection("Jwt");
             if (jwtSection.Exists())
             {
                 // Init the authentication service
-                AuthService = new JwtService(services, configurationSection.GetSection("Jwt"), unsealData, events: events);
+                AuthService = new JwtService(services, jwtSection, unsealData, events: events);
+
+                encryptionKey = jwtSection.GetSection("EncryptionKey").Get<string>();
             }
+            else
+            {
+                encryptionKey = configurationSection.GetSection("Jwt-EncryptionKey").Get<string>();
+            }
+
+            if (string.IsNullOrEmpty(encryptionKey))
+            {
+                throw new Exception("No EncryptionKey configured");
+            }
+
+            _encryptionKey = unsealData == null ? encryptionKey : unsealData("Jwt-EncryptionKey", encryptionKey);
         }
 
         /// <summary>
@@ -73,6 +91,17 @@ namespace com.etsoo.ServiceApp.Application
             // Also possible to change global names
             parameters.Add(Constants.CurrentUserField, user.IdInt);
             parameters.Add(Constants.CurrentOrgField, user.OrganizationInt);
+        }
+
+        /// <summary>
+        /// Exchange data encryption
+        /// 交换数据加密
+        /// </summary>
+        /// <param name="plainText">Plain text</param>
+        /// <returns>Result</returns>
+        public string ExchangeData(string plainText)
+        {
+            return CryptographyUtils.AESEncrypt(plainText, GetExchangeKey(_encryptionKey, Configuration.ServiceId), 10);
         }
     }
 }
