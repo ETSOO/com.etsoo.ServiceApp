@@ -37,6 +37,7 @@ namespace com.etsoo.ServiceApp.Repo
             parameters.Add("Organization", coreUser.Organization);
             parameters.Add("OrganizationName", coreUser.OrganizationName);
             parameters.Add("RoleValue", coreUser.RoleValue);
+            parameters.Add("Avatar", coreUser.Avatar);
 
             var command = CreateCommand(GetCommandName("exchange token"), parameters);
             return await QueryAsResultAsync(command);
