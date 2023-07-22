@@ -114,7 +114,8 @@ namespace com.etsoo.ServiceApp.Application
         /// <returns>Result</returns>
         public async Task<string> ExchangeDataAsync<T>(T obj)
         {
-            return await SharedUtils.JsonSerializeAsync(obj, SharedUtils.JsonDefaultSerializerOptions);
+            var json = await SharedUtils.JsonSerializeAsync(obj, SharedUtils.JsonDefaultSerializerOptions);
+            return ExchangeData(json);
         }
     }
 }
