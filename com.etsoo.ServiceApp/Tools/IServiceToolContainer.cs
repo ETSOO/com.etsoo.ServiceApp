@@ -9,7 +9,7 @@ namespace com.etsoo.ServiceApp.Tools
     /// Service container interface
     /// 服务容器接口
     /// </summary>
-    public interface IServiceContainer
+    public interface IServiceToolContainer
     {
         /// <summary>
         /// Async authorize API service

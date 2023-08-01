@@ -4,7 +4,7 @@
     /// Service settings
     /// 服务设置
     /// </summary>
-    public record ServiceSettings
+    public record ServiceToolSettings
     {
         /// <summary>
         /// Region

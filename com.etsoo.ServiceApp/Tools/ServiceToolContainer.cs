@@ -17,11 +17,11 @@ namespace com.etsoo.ServiceApp.Tools
     /// Service container
     /// 服务容器
     /// </summary>
-    public class ServiceContainer : IServiceContainer
+    public class ServiceToolContainer : IServiceToolContainer
     {
         readonly ILogger _logger;
         readonly IServiceApp _app;
-        readonly ServiceSettings _settings;
+        readonly ServiceToolSettings _settings;
         readonly IMessageQueueProducer _messageQueueProducer;
         readonly ISmartERPProxy _smartERPProxy;
 
@@ -36,10 +36,10 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="settings">Settings</param>
         /// <param name="messageQueueProducer">Message queue</param>
         /// <param name="smartERPProxy">SmartERP proxy</param>
-        public ServiceContainer(
-            ILogger<ServiceContainer> logger,
+        public ServiceToolContainer(
+            ILogger<ServiceToolContainer> logger,
             IServiceApp app,
-            ServiceSettings settings,
+            ServiceToolSettings settings,
             IMessageQueueProducer messageQueueProducer,
             ISmartERPProxy smartERPProxy
         )
