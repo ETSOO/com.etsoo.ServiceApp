@@ -42,7 +42,7 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="globalUserId">Global user id</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        Task<(ApiServiceEnum service, string key)?> AuthorizeSMTPAsync(int globalOrganizationId, int globalUserId, CancellationToken cancellationToken = default);
+        Task<(ApiServiceEnum service, string? key)> AuthorizeSMTPAsync(int globalOrganizationId, int globalUserId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Async create user
