@@ -105,7 +105,7 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="globalUserId">Global user id</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async Task<(ApiServiceEnum service, string key)?> AuthorizeSMTPAsync(int globalOrganizationId, int globalUserId, CancellationToken cancellationToken = default)
+        public async Task<(ApiServiceEnum service, string? key)> AuthorizeSMTPAsync(int globalOrganizationId, int globalUserId, CancellationToken cancellationToken = default)
         {
             var apiServices = new[] { ApiServiceEnum.SMTP, ApiServiceEnum.SMTPDelegation };
             var keys = (await AuthorizeApiServicesAsync(globalOrganizationId, globalUserId, apiServices, false, cancellationToken))?.ToArray();
@@ -113,7 +113,7 @@ namespace com.etsoo.ServiceApp.Tools
             if (keys == null || firstKey == null)
             {
                 _logger.LogInformation("SMTP AuthorizeApiServiceAsync failed with User {user} from {org}", globalUserId, globalOrganizationId);
-                return null;
+                return (apiServices[0], null);
             }
 
             var index = Array.IndexOf(keys, firstKey);
