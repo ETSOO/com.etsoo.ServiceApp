@@ -6,6 +6,7 @@ using com.etsoo.ApiProxy.Defs;
 using com.etsoo.CoreFramework.User;
 using com.etsoo.MessageQueue;
 using com.etsoo.ServiceApp.Application;
+using com.etsoo.ServiceApp.User;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
 using System.Net;
@@ -16,14 +17,13 @@ namespace com.etsoo.ServiceApp.Tools
     /// Service container
     /// 服务容器
     /// </summary>
-    public class ServiceContainer
+    public class ServiceContainer : IServiceContainer
     {
         readonly ILogger _logger;
         readonly IServiceApp _app;
         readonly ServiceSettings _settings;
         readonly IMessageQueueProducer _messageQueueProducer;
         readonly ISmartERPProxy _smartERPProxy;
-        readonly CancellationToken _cancellationToken;
 
         readonly IPAddress _ip;
 
@@ -36,21 +36,19 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="settings">Settings</param>
         /// <param name="messageQueueProducer">Message queue</param>
         /// <param name="smartERPProxy">SmartERP proxy</param>
-        /// <param name="cancellationToken">Cancellation token</param>
         public ServiceContainer(
-            ILogger logger,
+            ILogger<ServiceContainer> logger,
             IServiceApp app,
             ServiceSettings settings,
             IMessageQueueProducer messageQueueProducer,
-            ISmartERPProxy smartERPProxy,
-            CancellationToken cancellationToken)
+            ISmartERPProxy smartERPProxy
+        )
         {
             _logger = logger;
             _app = app;
             _settings = settings;
             _messageQueueProducer = messageQueueProducer;
             _smartERPProxy = smartERPProxy;
-            _cancellationToken = cancellationToken;
 
             var hostname = Dns.GetHostName();
             var ipEntry = Dns.GetHostEntry(hostname);
@@ -64,12 +62,13 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="globalOrganizationId">Global organization id</param>
         /// <param name="globalUserId">Global user id</param>
         /// <param name="apiService">API service</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>API key</returns>
-        public async Task<string?> AuthorizeApiServiceAsync(int globalOrganizationId, int globalUserId, ApiServiceEnum apiService)
+        public async Task<string?> AuthorizeApiServiceAsync(int globalOrganizationId, int globalUserId, ApiServiceEnum apiService, CancellationToken cancellationToken = default)
         {
             var rq = new ApiServiceRQ { Api = apiService, OrganizationId = globalOrganizationId, UserId = globalUserId };
             var key = await _app.ExchangeDataAsync(rq);
-            return await _smartERPProxy.AuthorizeApiServiceAsync(_app.Configuration.ServiceId, key, _cancellationToken);
+            return await _smartERPProxy.AuthorizeApiServiceAsync(_app.Configuration.ServiceId, key, cancellationToken);
         }
 
         /// <summary>
@@ -80,8 +79,9 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="globalUserId">Global user id</param>
         /// <param name="apiServices">API services</param>
         /// <param name="includeAll">Include all services or not</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>API key</returns>
-        public async Task<IEnumerable<string?>?> AuthorizeApiServicesAsync(int globalOrganizationId, int globalUserId, IEnumerable<ApiServiceEnum> apiServices, bool includeAll = false)
+        public async Task<IEnumerable<string?>?> AuthorizeApiServicesAsync(int globalOrganizationId, int globalUserId, IEnumerable<ApiServiceEnum> apiServices, bool includeAll = false, CancellationToken cancellationToken = default)
         {
             var keys = await Task.WhenAll(apiServices.Select(async api =>
             {
@@ -94,7 +94,7 @@ namespace com.etsoo.ServiceApp.Tools
                 Id = _app.Configuration.ServiceId,
                 Keys = keys,
                 IncludeAll = includeAll
-            }, _cancellationToken);
+            }, cancellationToken);
         }
 
         /// <summary>
@@ -103,11 +103,12 @@ namespace com.etsoo.ServiceApp.Tools
         /// </summary>
         /// <param name="globalOrganizationId">Global organization id</param>
         /// <param name="globalUserId">Global user id</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async Task<(ApiServiceEnum service, string key)?> AuthorizeSMTPAsync(int globalOrganizationId, int globalUserId)
+        public async Task<(ApiServiceEnum service, string key)?> AuthorizeSMTPAsync(int globalOrganizationId, int globalUserId, CancellationToken cancellationToken = default)
         {
             var apiServices = new[] { ApiServiceEnum.SMTP, ApiServiceEnum.SMTPDelegation };
-            var keys = (await AuthorizeApiServicesAsync(globalOrganizationId, globalUserId, apiServices))?.ToArray();
+            var keys = (await AuthorizeApiServicesAsync(globalOrganizationId, globalUserId, apiServices, false, cancellationToken))?.ToArray();
             var firstKey = keys?.FirstOrDefault(key => !string.IsNullOrEmpty(key));
             if (keys == null || firstKey == null)
             {
@@ -125,23 +126,24 @@ namespace com.etsoo.ServiceApp.Tools
         /// </summary>
         /// <param name="orgId">Local organization id</param>
         /// <param name="userId">Local user id</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async Task<IServiceUser?> CreateUserAsync(int orgId, int userId = 0)
+        public async Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, CancellationToken cancellationToken = default) where T : IServiceUser, IServiceUserSelf<T>
         {
             // Query user
-            var userDataResult = await _app.GetApiUserDataAsync(orgId, userId, _cancellationToken);
+            var userDataResult = await _app.GetApiUserDataAsync(orgId, userId, cancellationToken);
             if (userDataResult == null || !userDataResult.Ok)
             {
                 _logger.LogError("No API User {user} from {org} data found with error {title}", orgId, userId, userDataResult?.Title);
-                return null;
+                return default;
             }
 
             var ci = new CultureInfo(_settings.Culture);
-            var user = ServiceUser.CreateFromData(userDataResult.Data, _ip, ci, _settings.Region);
+            var user = T.CreateFromData(userDataResult.Data, _ip, ci, _settings.Region);
             if (user == null)
             {
                 _logger.LogError("No User {user} from {org} Created", orgId, userId);
-                return null;
+                return default;
             }
 
             return user;
@@ -154,11 +156,12 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="apiService">API service</param>
         /// <param name="key">API Key</param>
         /// <param name="data">Email data</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Message id</returns>
-        public async Task<string> SendEmailAsync(ApiServiceEnum apiService, string key, SendEmailDto data)
+        public async Task<string> SendEmailAsync(ApiServiceEnum apiService, string key, SendEmailDto data, CancellationToken cancellationToken = default)
         {
             var properties = new MessageProperties { AppId = _app.Configuration.ServiceId.ToString(), UserId = key, Type = SmartERPUtils.ApiServiceToType(apiService) };
-            var messageId = await _messageQueueProducer.SendJsonAsync(data, properties);
+            var messageId = await _messageQueueProducer.SendJsonAsync(data, properties, cancellationToken);
             return messageId;
         }
     }
