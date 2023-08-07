@@ -1,7 +1,6 @@
 ﻿using com.etsoo.ApiModel.Dto.SmartERP;
 using com.etsoo.ApiModel.Dto.SmartERP.MessageQueue;
 using com.etsoo.ApiModel.RQ.SmartERP;
-using com.etsoo.ApiModel.Utils;
 using com.etsoo.ApiProxy.Defs;
 using com.etsoo.CoreFramework.User;
 using com.etsoo.MessageQueue;
@@ -160,9 +159,7 @@ namespace com.etsoo.ServiceApp.Tools
         /// <returns>Message id</returns>
         public async Task<string> SendEmailAsync(ApiServiceEnum apiService, string key, SendEmailDto data, CancellationToken cancellationToken = default)
         {
-            var properties = new MessageProperties { AppId = _app.Configuration.ServiceId.ToString(), UserId = key, Type = SmartERPUtils.ApiServiceToType(apiService) };
-            var messageId = await _messageQueueProducer.SendJsonAsync(data, properties, cancellationToken);
-            return messageId;
+            return await _messageQueueProducer.SendEmailAsync(_app.Configuration.ServiceId, apiService, key, data, cancellationToken);
         }
     }
 }
