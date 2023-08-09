@@ -2,7 +2,6 @@
 using com.etsoo.ApiModel.Dto.SmartERP.MessageQueue;
 using com.etsoo.ApiModel.Utils;
 using com.etsoo.MessageQueue;
-using System.Text;
 
 namespace com.etsoo.ServiceApp.Tools
 {
@@ -36,13 +35,13 @@ namespace com.etsoo.ServiceApp.Tools
         /// </summary>
         /// <param name="producer">Message producer</param>
         /// <param name="serviceId">Service id</param>
-        /// <param name="operationType">Operation type</param>
+        /// <param name="data">Operation data</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Message id</returns>
-        public static async Task<string> SendOperationMessageAsync(this IMessageQueueProducer producer, int serviceId, string operationType, CancellationToken cancellationToken = default)
+        public static async Task<string> SendOperationMessageAsync(this IMessageQueueProducer producer, int serviceId, OperationMessageDto data, CancellationToken cancellationToken = default)
         {
             var properites = new MessageProperties { AppId = serviceId.ToString(), Type = SmartERPUtils.SmartERPOperationMessageType };
-            var messageId = await producer.SendAsync(Encoding.UTF8.GetBytes(operationType), properites, cancellationToken);
+            var messageId = await producer.SendJsonAsync(data, properites, cancellationToken);
             return messageId;
         }
     }
