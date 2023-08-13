@@ -88,7 +88,10 @@ namespace com.etsoo.ServiceApp.Services
                 {
                     // Copy data
                     result.Data["DeviceId"] = coreUser.DeviceId;
-                    result.Data["Uid"] = coreUser.Uid;
+
+                    // Core system Uid = GUID
+                    // Local system Uid = Global user id
+                    // result.Data["Uid"] = coreUser.Uid;
 
                     // T.Create result is an interface, cannot cast back to T
                     var serviceUser = creator(result.Data, ip, coreUser.Language, coreUser.Region);
