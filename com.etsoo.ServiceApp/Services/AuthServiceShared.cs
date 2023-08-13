@@ -107,7 +107,7 @@ namespace com.etsoo.ServiceApp.Services
                     // Expiry seconds
                     result.Data[Constants.SecondsName] = _authService.AccessTokenMinutes * 60;
 
-                    // Remove user id to avoid information leaking
+                    // Remove user id / organization id to avoid information leaking
                     result.Data.Remove("Id");
                     result.Data.Remove("Organization");
                 }
