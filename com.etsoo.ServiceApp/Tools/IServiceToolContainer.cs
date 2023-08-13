@@ -50,9 +50,10 @@ namespace com.etsoo.ServiceApp.Tools
         /// </summary>
         /// <param name="orgId">Local organization id</param>
         /// <param name="userId">Local user id</param>
+        /// <param name="deviceId">Device id</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, CancellationToken cancellationToken = default) where T : IServiceUser, IServiceUserSelf<T>;
+        Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, CancellationToken cancellationToken = default) where T : IServiceUser, IServiceUserSelf<T>;
 
         /// <summary>
         /// Async send email
