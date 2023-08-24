@@ -6,6 +6,8 @@ using com.etsoo.CoreFramework.User;
 using com.etsoo.MessageQueue;
 using com.etsoo.ServiceApp.Application;
 using com.etsoo.ServiceApp.User;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
 using System.Net;
@@ -36,7 +38,7 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="messageQueueProducer">Message queue</param>
         /// <param name="smartERPProxy">SmartERP proxy</param>
         public ServiceToolContainer(
-            ILogger<ServiceToolContainer> logger,
+            ILogger logger,
             IServiceApp app,
             ServiceToolSettings settings,
             IMessageQueueProducer messageQueueProducer,
@@ -52,6 +54,32 @@ namespace com.etsoo.ServiceApp.Tools
             var hostname = Dns.GetHostName();
             var ipEntry = Dns.GetHostEntry(hostname);
             _ip = ipEntry.AddressList.First();
+        }
+
+        /// <summary>
+        /// Constructor
+        /// 构造函数
+        /// </summary>
+        /// <param name="logger">Logger</param>
+        /// <param name="app">Application</param>
+        /// <param name="settings">Settings</param>
+        /// <param name="messageQueueProducer">Message queue</param>
+        /// <param name="smartERPProxy">SmartERP proxy</param>
+        [ActivatorUtilitiesConstructor]
+        public ServiceToolContainer(
+            ILogger<ServiceToolContainer> logger,
+            IServiceApp app,
+            IConfiguration configuration,
+            IMessageQueueProducer messageQueueProducer,
+            ISmartERPProxy smartERPProxy
+        ) : this(
+            logger,
+            app,
+            configuration.GetSection("AppSettings").Get<ServiceToolSettings>() ?? throw new Exception("No ServiceToolSettings found under AppSettings"),
+            messageQueueProducer,
+            smartERPProxy
+        )
+        {
         }
 
         /// <summary>
