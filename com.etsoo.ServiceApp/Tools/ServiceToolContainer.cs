@@ -183,6 +183,20 @@ namespace com.etsoo.ServiceApp.Tools
         }
 
         /// <summary>
+        /// Async create user
+        /// 异步创建用户
+        /// </summary>
+        /// <param name="orgId">Local organization id</param>
+        /// <param name="userId">Local user id</param>
+        /// <param name="deviceId">Device id</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result</returns>
+        public Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, CancellationToken cancellationToken = default) where T : IServiceUser, IServiceUserSelf<T>
+        {
+            return CreateUserAsync<T>(orgId, userId, deviceId, null, cancellationToken);
+        }
+
+        /// <summary>
         /// Async send email
         /// 异步发送邮件
         /// </summary>
