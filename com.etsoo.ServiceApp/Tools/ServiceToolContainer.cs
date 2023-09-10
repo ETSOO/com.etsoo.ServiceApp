@@ -3,6 +3,7 @@ using com.etsoo.ApiModel.Dto.SmartERP.MessageQueue;
 using com.etsoo.ApiModel.RQ.SmartERP;
 using com.etsoo.ApiProxy.Defs;
 using com.etsoo.CoreFramework.User;
+using com.etsoo.Localization;
 using com.etsoo.MessageQueue;
 using com.etsoo.ServiceApp.Application;
 using com.etsoo.ServiceApp.User;
@@ -154,9 +155,10 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="orgId">Local organization id</param>
         /// <param name="userId">Local user id</param>
         /// <param name="deviceId">Device id</param>
+        /// <param name="culture">Culture</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, CancellationToken cancellationToken = default) where T : IServiceUser, IServiceUserSelf<T>
+        public async Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, string? culture = null, CancellationToken cancellationToken = default) where T : IServiceUser, IServiceUserSelf<T>
         {
             // Query user
             var userDataResult = await _app.GetApiUserDataAsync(orgId, userId, deviceId, cancellationToken);
@@ -166,7 +168,10 @@ namespace com.etsoo.ServiceApp.Tools
                 return default;
             }
 
-            var ci = new CultureInfo(_settings.Culture);
+            var ci = new CultureInfo(culture ?? _settings.Culture);
+            if (!CultureInfo.CurrentCulture.Name.Equals(ci.Name))
+                LocalizationUtils.SetCulture(ci);
+
             var user = T.CreateFromData(userDataResult.Data, _ip, ci, _settings.Region);
             if (user == null)
             {
