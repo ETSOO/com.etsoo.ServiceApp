@@ -25,7 +25,7 @@ namespace com.etsoo.ServiceApp.Tools
         public static async Task<string> SendEmailAsync(this IMessageQueueProducer producer, int serviceId, ApiServiceEnum apiService, string key, SendEmailDto data, CancellationToken cancellationToken = default)
         {
             var properties = new MessageProperties { AppId = serviceId.ToString(), UserId = key, Type = SmartERPUtils.ApiServiceToType(apiService) };
-            var messageId = await producer.SendJsonAsync(data, properties, cancellationToken);
+            var messageId = await producer.SendJsonAsync(data, ApiModel.ApiModelJsonSerializerContext.Default.SendEmailDto, properties, cancellationToken);
             return messageId;
         }
 
@@ -41,7 +41,7 @@ namespace com.etsoo.ServiceApp.Tools
         public static async Task<string> SendOperationMessageAsync(this IMessageQueueProducer producer, int serviceId, OperationMessageDto data, CancellationToken cancellationToken = default)
         {
             var properites = new MessageProperties { AppId = serviceId.ToString(), Type = SmartERPUtils.SmartERPOperationMessageType };
-            var messageId = await producer.SendJsonAsync(data, properites, cancellationToken);
+            var messageId = await producer.SendJsonAsync(data, ApiModel.ApiModelJsonSerializerContext.Default.OperationMessageDto, properites, cancellationToken);
             return messageId;
         }
     }

@@ -2,8 +2,9 @@
 using com.etsoo.CoreFramework.Authentication;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
-using Microsoft.Extensions.Configuration;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Metadata;
 
 namespace com.etsoo.ServiceApp.Application
 {
@@ -27,12 +28,6 @@ namespace com.etsoo.ServiceApp.Application
         IAuthService? AuthService { get; init; }
 
         /// <summary>
-        /// Configuration section
-        /// 配置区块
-        /// </summary>
-        IConfigurationSection Section { get; init; }
-
-        /// <summary>
         /// Exchange data encryption
         /// 交换数据加密
         /// </summary>
@@ -47,7 +42,19 @@ namespace com.etsoo.ServiceApp.Application
         /// <typeparam name="T">Generic object type</typeparam>
         /// <param name="obj">Object</param>
         /// <returns>Result</returns>
+        [RequiresDynamicCode("ExchangeDataAsync 'T' may require dynamic access otherwise can break functionality when trimming application code")]
+        [RequiresUnreferencedCode("ExchangeDataAsync 'T' may require dynamic access otherwise can break functionality when trimming application code")]
         Task<string> ExchangeDataAsync<T>(T obj);
+
+        /// <summary>
+        /// Async exchange object data encryption
+        /// 异步交换对象数据加密
+        /// </summary>
+        /// <typeparam name="T">Generic object type</typeparam>
+        /// <param name="obj">Object</param>
+        /// <param name="typeInfo">Json type info</param>
+        /// <returns>Result</returns>
+        Task<string> ExchangeDataAsync<T>(T obj, JsonTypeInfo<T> typeInfo);
     }
 
     /// <summary>

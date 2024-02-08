@@ -95,7 +95,7 @@ namespace com.etsoo.ServiceApp.Tools
         public async Task<string?> AuthorizeApiServiceAsync(int globalOrganizationId, int globalUserId, ApiServiceEnum apiService, CancellationToken cancellationToken = default)
         {
             var rq = new ApiServiceRQ { Api = apiService, OrganizationId = globalOrganizationId, UserId = globalUserId };
-            var key = await _app.ExchangeDataAsync(rq);
+            var key = await _app.ExchangeDataAsync(rq, ApiModel.ApiModelJsonSerializerContext.Default.ApiServiceRQ);
             return await _smartERPProxy.AuthorizeApiServiceAsync(_app.Configuration.ServiceId, key, cancellationToken);
         }
 
@@ -114,7 +114,7 @@ namespace com.etsoo.ServiceApp.Tools
             var keys = await Task.WhenAll(apiServices.Select(async api =>
             {
                 var rq = new ApiServiceRQ { Api = api, OrganizationId = globalOrganizationId, UserId = globalUserId };
-                return await _app.ExchangeDataAsync(rq);
+                return await _app.ExchangeDataAsync(rq, ApiModel.ApiModelJsonSerializerContext.Default.ApiServiceRQ);
             }));
 
             return await _smartERPProxy.AuthorizeApiServicesAsync(new AuthorizeApiServicesRQ
