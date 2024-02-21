@@ -26,14 +26,12 @@ namespace com.etsoo.ServiceApp.Application
         /// Setup application
         /// 设置应用程序
         /// </summary>
-        /// <typeparam name="D">Generic database type</typeparam>
         /// <param name="section">Configuration section</param>
         /// <param name="unsealData">Unseal data function</param>
         /// <param name="creator">Configuration and Database creator function</param>
         /// <returns>Result</returns>
         /// <exception cref="Exception">No configuration section</exception>
-        protected static (S, D) SetupApp<D>(IConfiguration section, Func<string, string, string>? unsealData, Func<string, IConfigurationSection, (S, D)> creator)
-            where D : IDatabase<C>
+        protected static (S, IDatabase<C>) SetupApp(IConfiguration section, Func<string, string, string>? unsealData, Func<string, IConfigurationSection, (S, IDatabase<C>)> creator)
         {
             // App configuration
             var data = section.GetSection("Configuration");
