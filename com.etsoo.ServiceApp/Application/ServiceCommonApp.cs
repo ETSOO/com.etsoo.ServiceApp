@@ -23,6 +23,38 @@ namespace com.etsoo.ServiceApp.Application
         where C : DbConnection
     {
         /// <summary>
+        /// Setup application
+        /// 设置应用程序
+        /// </summary>
+        /// <typeparam name="D">Generic database type</typeparam>
+        /// <param name="section">Configuration section</param>
+        /// <param name="unsealData">Unseal data function</param>
+        /// <param name="creator">Configuration and Database creator function</param>
+        /// <returns>Result</returns>
+        /// <exception cref="Exception">No configuration section</exception>
+        protected static (S, D) SetupApp<D>(IConfiguration section, Func<string, string, string>? unsealData, Func<string, IConfigurationSection, (S, D)> creator)
+            where D : IDatabase<C>
+        {
+            // App configuration
+            var data = section.GetSection("Configuration");
+            if (!data.Exists())
+            {
+                throw new Exception("Configuration section not found");
+            }
+
+            // Database
+            var field = "ConnectionString";
+            var csRaw = section.GetValue<string>(field) ?? section.GetConnectionString(data.GetValue<string>(nameof(ServiceAppConfiguration.Name)) ?? "SmartERPService");
+            var connectionString = CryptographyUtils.UnsealData(field, csRaw, unsealData);
+
+            var (config, db) = creator(connectionString, data);
+            config.UnsealData(unsealData);
+
+            // Return
+            return (config, db);
+        }
+
+        /// <summary>
         /// Setup application authorization
         /// 设置应用授权
         /// </summary>
@@ -32,7 +64,7 @@ namespace com.etsoo.ServiceApp.Application
         /// <param name="events">JWT events</param>
         /// <returns>Result</returns>
         /// <exception cref="Exception">No EncryptionKey configured exception</exception>
-        public static (string encryptionKey, IAuthService? authService) SetupAuth(IServiceCollection services, IConfiguration section, Func<string, string, string>? unsealData, JwtBearerEvents? events)
+        protected static (string encryptionKey, IAuthService? authService) SetupAuth(IServiceCollection services, IConfiguration section, Func<string, string, string>? unsealData, JwtBearerEvents? events)
         {
             string? encryptionKey;
             IAuthService? authService;
