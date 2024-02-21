@@ -31,7 +31,7 @@ namespace com.etsoo.ServiceApp.Application
         /// <param name="creator">Configuration and Database creator function</param>
         /// <returns>Result</returns>
         /// <exception cref="Exception">No configuration section</exception>
-        protected static (S, IDatabase<C>) SetupApp(IConfiguration section, Func<string, string, string>? unsealData, Func<string, IConfigurationSection, (S, IDatabase<C>)> creator)
+        protected static (S, IDatabase<C>) SetupApp(IConfiguration section, Func<string, string, string>? unsealData, Func<IConfigurationSection, string, (S configuration, IDatabase<C> db)> creator)
         {
             // App configuration
             var data = section.GetSection("Configuration");
@@ -45,7 +45,7 @@ namespace com.etsoo.ServiceApp.Application
             var csRaw = section.GetValue<string>(field) ?? section.GetConnectionString(data.GetValue<string>(nameof(ServiceAppConfiguration.Name)) ?? "SmartERPService");
             var connectionString = CryptographyUtils.UnsealData(field, csRaw, unsealData);
 
-            var (config, db) = creator(connectionString, data);
+            var (config, db) = creator(data, connectionString);
             config.UnsealData(unsealData);
 
             // Return
