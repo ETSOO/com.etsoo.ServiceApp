@@ -6,10 +6,10 @@ using com.etsoo.CoreFramework.User;
 using com.etsoo.Localization;
 using com.etsoo.MessageQueue;
 using com.etsoo.ServiceApp.Application;
-using com.etsoo.ServiceApp.User;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Data.Common;
 using System.Globalization;
 using System.Net;
 
@@ -19,10 +19,14 @@ namespace com.etsoo.ServiceApp.Tools
     /// Service container
     /// 服务容器
     /// </summary>
-    public class ServiceToolContainer : IServiceToolContainer
+    /// <typeparam name="S">Generic settings type</typeparam>
+    /// <typeparam name="C">Generic database connection type</typeparam>
+    public abstract class ServiceToolContainer<S, C> : IServiceToolContainer
+        where S : ServiceAppConfiguration
+        where C : DbConnection
     {
         readonly ILogger _logger;
-        readonly IServiceApp _app;
+        readonly IServiceBaseApp<S, C> _app;
         readonly ServiceToolSettings _settings;
         readonly IMessageQueueProducer _messageQueueProducer;
         readonly ISmartERPProxy _smartERPProxy;
@@ -40,7 +44,7 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="smartERPProxy">SmartERP proxy</param>
         public ServiceToolContainer(
             ILogger logger,
-            IServiceApp app,
+            IServiceBaseApp<S, C> app,
             ServiceToolSettings settings,
             IMessageQueueProducer messageQueueProducer,
             ISmartERPProxy smartERPProxy
@@ -68,8 +72,8 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="smartERPProxy">SmartERP proxy</param>
         [ActivatorUtilitiesConstructor]
         public ServiceToolContainer(
-            ILogger<ServiceToolContainer> logger,
-            IServiceApp app,
+            ILogger<ServiceToolContainer<S, C>> logger,
+            IServiceBaseApp<S, C> app,
             IConfiguration configuration,
             IMessageQueueProducer messageQueueProducer,
             ISmartERPProxy smartERPProxy
@@ -158,7 +162,7 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="culture">Culture</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, string? culture = null, CancellationToken cancellationToken = default) where T : IServiceUser, IServiceUserSelf<T>
+        public async Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, string? culture = null, CancellationToken cancellationToken = default) where T : IServiceUser, IUserCreator<T>
         {
             // Query user
             var userDataResult = await _app.GetApiUserDataAsync(orgId, userId, deviceId, cancellationToken);
@@ -172,7 +176,7 @@ namespace com.etsoo.ServiceApp.Tools
             if (!CultureInfo.CurrentCulture.Name.Equals(ci.Name))
                 LocalizationUtils.SetCulture(ci);
 
-            var user = T.CreateFromData(userDataResult.Data, _ip, ci, _settings.Region);
+            var user = T.Create(userDataResult.Data, _ip, ci, _settings.Region);
             if (user == null)
             {
                 _logger.LogError("No User {user} from {org} Created", orgId, userId);
@@ -191,7 +195,7 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="deviceId">Device id</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, CancellationToken cancellationToken = default) where T : IServiceUser, IServiceUserSelf<T>
+        public Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, CancellationToken cancellationToken = default) where T : IServiceUser, IUserCreator<T>
         {
             return CreateUserAsync<T>(orgId, userId, deviceId, null, cancellationToken);
         }

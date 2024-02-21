@@ -2,6 +2,8 @@
 using com.etsoo.CoreFramework.Authentication;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
+using MySql.Data.MySqlClient;
+using Npgsql;
 using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
@@ -13,14 +15,10 @@ namespace com.etsoo.ServiceApp.Application
     /// SmartERP服务基础程序接口
     /// </summary>
     /// <typeparam name="C">Connection</typeparam>
-    public interface IServiceBaseApp<C> : ICoreApplication<C> where C : DbConnection
+    public interface IServiceBaseApp<S, C> : ICoreApplication<S, C>
+        where S : ServiceAppConfiguration
+        where C : DbConnection
     {
-        /// <summary>
-        /// Application configuration
-        /// 程序配置
-        /// </summary>
-        new IServiceAppConfiguration Configuration { get; }
-
         /// <summary>
         /// Authentication service
         /// 验证服务
@@ -61,11 +59,23 @@ namespace com.etsoo.ServiceApp.Application
     /// SmartERP service application interface
     /// SmartERP服务程序接口
     /// </summary>
-    public interface IServiceApp : IServiceBaseApp<SqlConnection> { }
+    public interface IServiceApp<S> : IServiceBaseApp<S, SqlConnection> where S : ServiceAppConfiguration { }
 
     /// <summary>
     /// Sqlite service application interface
     /// Sqlite服务程序接口
     /// </summary>
-    public interface ISqliteApp : IServiceBaseApp<SqliteConnection> { }
+    public interface ISqliteApp<S> : IServiceBaseApp<S, SqliteConnection> where S : ServiceAppConfiguration { }
+
+    /// <summary>
+    /// MySql service application interface
+    /// MySql服务程序接口
+    /// </summary>
+    public interface IMySqlApp<S> : IServiceBaseApp<S, MySqlConnection> where S : ServiceAppConfiguration { }
+
+    /// <summary>
+    /// PostgreSql service application interface
+    /// PostgreSql服务程序接口
+    /// </summary>
+    public interface INpgApp<S> : IServiceBaseApp<S, NpgsqlConnection> where S : ServiceAppConfiguration { }
 }

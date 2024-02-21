@@ -18,36 +18,21 @@ namespace com.etsoo.ServiceApp.Application
     /// 通用服务程序
     /// </summary>
     /// <typeparam name="C">Generic database type</typeparam>
-    public abstract class ServiceCommonApp<C> : CoreApplication<C>, IServiceBaseApp<C> where C : DbConnection
+    public abstract class ServiceCommonApp<S, C> : CoreApplication<S, C>, IServiceBaseApp<S, C>
+        where S : ServiceAppConfiguration
+        where C : DbConnection
     {
         /// <summary>
-        /// Setup application
-        /// 设置应用程序
+        /// Setup application authorization
+        /// 设置应用授权
         /// </summary>
-        /// <typeparam name="D">Generic database type</typeparam>
+        /// <param name="services">Services</param>
         /// <param name="section">Configuration section</param>
-        /// <param name="modelValidated">Model validated or not</param>
-        /// <param name="unsealData">Unseal data function</param>
-        /// <param name="creator">Database creator function</param>
+        /// <param name="unsealData">Unseal data handler</param>
+        /// <param name="events">JWT events</param>
         /// <returns>Result</returns>
-        /// <exception cref="Exception">No configuration section</exception>
-        protected static (ServiceAppConfiguration, D) SetupApp<D>(IConfiguration section, bool modelValidated, Func<string, string, string>? unsealData, Func<string, D> creator)
-            where D : IDatabase<C>
-        {
-            // App configuration
-            var items = section.GetSection("Configuration").Get<ServiceAppConfigurationItems>() ?? throw new Exception("Configuration section not found");
-            var config = new ServiceAppConfiguration(items, unsealData, modelValidated);
-
-            // Database
-            var field = "ConnectionString";
-            var csRaw = section.GetValue<string>(field) ?? section.GetConnectionString(nameof(SqliteApp));
-            var connectionString = CryptographyUtils.UnsealData(field, csRaw, unsealData);
-
-            // Return
-            return (config, creator(connectionString));
-        }
-
-        protected static (string encryptionKey, IAuthService? authService) SetupAuth(IServiceCollection services, IConfiguration section, Func<string, string, string>? unsealData, JwtBearerEvents? events)
+        /// <exception cref="Exception">No EncryptionKey configured exception</exception>
+        public static (string encryptionKey, IAuthService? authService) SetupAuth(IServiceCollection services, IConfiguration section, Func<string, string, string>? unsealData, JwtBearerEvents? events)
         {
             string? encryptionKey;
             IAuthService? authService;
@@ -83,25 +68,18 @@ namespace com.etsoo.ServiceApp.Application
         public IAuthService? AuthService { get; init; }
 
         /// <summary>
-        /// Application configuration localized
-        /// 本地化程序配置
-        /// </summary>
-        public new IServiceAppConfiguration Configuration { get; }
-
-        /// <summary>
         /// Constructor
         /// 构造函数
         /// </summary>
         /// <param name="init">Init</param>
         /// <param name="auth">Authorization</param>
+        /// <param name="modelValidated">Model validated or not</param>
         public ServiceCommonApp(
-            (IServiceAppConfiguration configuration, IDatabase<C> db) init,
-            (string encryptionKey, IAuthService? authService) auth
-        ) : base(init)
+            (S configuration, IDatabase<C> db) init,
+            (string encryptionKey, IAuthService? authService) auth,
+            bool modelValidated = false
+        ) : base(init, modelValidated)
         {
-            // Strong type
-            Configuration = init.configuration;
-
             // Init auth
             (_encryptionKey, AuthService) = auth;
         }
