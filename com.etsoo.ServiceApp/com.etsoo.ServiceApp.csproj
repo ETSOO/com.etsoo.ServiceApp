@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 	  <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
-	  <Version>1.1.80</Version>
+	  <Version>1.1.81</Version>
 	  <Authors>ETSOO SmartERP NextGen Team</Authors>
 	  <Company>ETSOO / 亿速思维</Company>
 	  <Description>ETSOO Service Application Framework
@@ -31,7 +31,7 @@
 
   <ItemGroup>
     <PackageReference Include="com.etsoo.ApiProxy" Version="1.0.50" />
-    <PackageReference Include="com.etsoo.CoreFramework" Version="1.3.61" />
+    <PackageReference Include="com.etsoo.CoreFramework" Version="1.3.63" />
     <PackageReference Include="com.etsoo.Localization" Version="1.0.17" />
     <PackageReference Include="com.etsoo.MessageQueue" Version="1.0.39" />
     <PackageReference Include="com.etsoo.UserAgentParser" Version="1.0.13" />
