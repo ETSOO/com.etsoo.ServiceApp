@@ -32,7 +32,7 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="logger">Logger</param>
         /// <param name="accessor">Http context accessor</param>
         public AuthServiceShared(A app, U? user, ILogger<AuthServiceShared<S, C, A, U>> logger)
-            : base(app, user, "auth", logger, false)
+            : base(app, user, "auth", logger)
         {
             if (app.AuthService == null) throw new NullReferenceException(nameof(app.AuthService));
             _authService = app.AuthService;
