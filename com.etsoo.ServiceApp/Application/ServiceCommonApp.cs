@@ -31,7 +31,7 @@ namespace com.etsoo.ServiceApp.Application
         /// <param name="creator">Configuration and Database creator function</param>
         /// <returns>Result</returns>
         /// <exception cref="Exception">No configuration section</exception>
-        protected static (S, IDatabase<C>) SetupApp(IConfiguration section, Func<string, string, string>? unsealData, Func<IConfigurationSection, string, (S configuration, IDatabase<C> db)> creator)
+        protected static (S, IDatabase<C>) SetupApp(IConfiguration section, Func<string, string, string>? unsealData, Func<IConfigurationSection, string, (S? configuration, IDatabase<C> db)> creator)
         {
             // App configuration
             var data = section.GetSection("Configuration");
@@ -42,10 +42,15 @@ namespace com.etsoo.ServiceApp.Application
 
             // Database
             var field = "ConnectionString";
-            var csRaw = section.GetValue<string>(field) ?? section.GetConnectionString(data.GetValue<string>(nameof(ServiceAppConfiguration.Name)) ?? "SmartERPService");
+            var csRaw = section.GetSection(field).Value ?? section.GetConnectionString(data.GetSection(nameof(ServiceAppConfiguration.Name)).Value ?? "SmartERPService");
             var connectionString = CryptographyUtils.UnsealData(field, csRaw, unsealData);
 
             var (config, db) = creator(data, connectionString);
+            if (config == null)
+            {
+                throw new Exception("Configuration creation failed");
+            }
+
             config.UnsealData(unsealData);
 
             // Return
@@ -60,23 +65,30 @@ namespace com.etsoo.ServiceApp.Application
         /// <param name="section">Configuration section</param>
         /// <param name="unsealData">Unseal data handler</param>
         /// <param name="events">JWT events</param>
+        /// <param name="creator">Jwt settings creator function</param>
         /// <returns>Result</returns>
         /// <exception cref="Exception">No EncryptionKey configured exception</exception>
-        protected static (string encryptionKey, IAuthService? authService) SetupAuth(IServiceCollection services, IConfiguration section, Func<string, string, string>? unsealData, JwtBearerEvents? events)
+        protected static (string encryptionKey, IAuthService? authService) SetupAuth(IServiceCollection services, IConfiguration section, Func<string, string, string>? unsealData, JwtBearerEvents? events, Func<IConfigurationSection, JwtSettings?> creator)
         {
-            string? encryptionKey;
-            IAuthService? authService;
+            string? encryptionKey = null;
+            IAuthService? authService = null;
 
-            var settings = section.GetSection("Jwt").Get<JwtSettings>();
-            if (settings != null)
+            var jwt = section.GetSection("Jwt");
+            if (jwt.Exists())
             {
+                var settings = creator(jwt);
+                if (settings == null)
+                {
+                    throw new Exception("JWT settings creation failed");
+                }
+
                 authService = new JwtService(services, settings, unsealData, events: events);
                 encryptionKey = settings.EncryptionKey;
             }
             else
             {
                 authService = null;
-                encryptionKey = section.GetSection("Jwt-EncryptionKey").Get<string>();
+                encryptionKey = section.GetSection("Jwt-EncryptionKey").Value;
             }
 
             if (string.IsNullOrEmpty(encryptionKey))
