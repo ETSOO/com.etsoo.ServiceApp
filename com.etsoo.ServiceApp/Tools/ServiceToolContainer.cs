@@ -6,9 +6,9 @@ using com.etsoo.CoreFramework.User;
 using com.etsoo.Localization;
 using com.etsoo.MessageQueue;
 using com.etsoo.ServiceApp.Application;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Data.Common;
 using System.Globalization;
 using System.Net;
@@ -74,13 +74,13 @@ namespace com.etsoo.ServiceApp.Tools
         public ServiceToolContainer(
             ILogger<ServiceToolContainer<S, C>> logger,
             IServiceBaseApp<S, C> app,
-            IConfiguration configuration,
+            IOptions<ServiceToolSettings> settings,
             IMessageQueueProducer messageQueueProducer,
             ISmartERPProxy smartERPProxy
         ) : this(
             logger,
             app,
-            configuration.GetSection("AppSettings").Get<ServiceToolSettings>() ?? throw new Exception("No ServiceToolSettings found under AppSettings"),
+            settings.Value,
             messageQueueProducer,
             smartERPProxy
         )
