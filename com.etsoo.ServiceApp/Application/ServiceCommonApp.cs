@@ -76,12 +76,7 @@ namespace com.etsoo.ServiceApp.Application
             var jwt = section.GetSection("Jwt");
             if (jwt.Exists())
             {
-                var settings = creator(jwt);
-                if (settings == null)
-                {
-                    throw new Exception("JWT settings creation failed");
-                }
-
+                var settings = creator(jwt) ?? throw new Exception("JWT settings creation failed");
                 authService = new JwtService(services, settings, unsealData, events: events);
                 encryptionKey = settings.EncryptionKey;
             }
