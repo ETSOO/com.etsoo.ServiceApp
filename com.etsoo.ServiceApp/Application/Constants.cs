@@ -14,7 +14,7 @@
         /// <summary>
         /// Refresh token header item name
         /// </summary>
-        public const string RefreshTokenHeaderName = "SmartERPRefreshToken";
+        public const string RefreshTokenHeaderName = "Smarterp-Refresh-Token";
 
         /// <summary>
         /// Token item name

@@ -52,7 +52,7 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="deviceId">Device id</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, CancellationToken cancellationToken = default) where T : IServiceUser, IUserCreator<T>;
+        Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, CancellationToken cancellationToken = default) where T : ICurrentUser, IUserCreator<T>;
 
         /// <summary>
         /// Async create user
@@ -64,7 +64,7 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="culture">Culture</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, string? culture = null, CancellationToken cancellationToken = default) where T : IServiceUser, IUserCreator<T>;
+        Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, string? culture = null, CancellationToken cancellationToken = default) where T : ICurrentUser, IUserCreator<T>;
 
         /// <summary>
         /// Async send email

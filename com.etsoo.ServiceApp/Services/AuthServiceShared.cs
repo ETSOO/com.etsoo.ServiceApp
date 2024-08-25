@@ -1,13 +1,16 @@
-﻿using com.etsoo.CoreFramework.Application;
+﻿using com.etsoo.ApiModel.Auth;
+using com.etsoo.CoreFramework.Models;
 using com.etsoo.CoreFramework.Services;
 using com.etsoo.CoreFramework.User;
-using com.etsoo.Database;
 using com.etsoo.ServiceApp.Application;
 using com.etsoo.Utils.Actions;
 using com.etsoo.Utils.Crypto;
+using com.etsoo.Utils.String;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Data.Common;
-using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 
 namespace com.etsoo.ServiceApp.Services
 {
@@ -20,9 +23,10 @@ namespace com.etsoo.ServiceApp.Services
         where S : ServiceAppConfiguration
         where C : DbConnection
         where A : IServiceBaseApp<S, C>
-        where U : IServiceUser, IUserCreator<U>
+        where U : ICurrentUser, IUserCreator<U>
     {
         readonly CoreFramework.Authentication.IAuthService _authService;
+        readonly IHttpClientFactory _clientFactory;
 
         /// <summary>
         /// Constructor
@@ -31,123 +35,342 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="app">Application</param>
         /// <param name="logger">Logger</param>
         /// <param name="accessor">Http context accessor</param>
-        public AuthServiceShared(A app, U? user, ILogger<AuthServiceShared<S, C, A, U>> logger)
+        public AuthServiceShared(A app, U? user, ILogger<AuthServiceShared<S, C, A, U>> logger, IHttpClientFactory clientFactory)
             : base(app, user, "auth", logger)
         {
             if (app.AuthService == null) throw new NullReferenceException(nameof(app.AuthService));
             _authService = app.AuthService;
+
+            _clientFactory = clientFactory;
         }
 
         /// <summary>
-        /// Async exchange token repository
-        /// 异步交换令牌仓库
+        /// Get log in URL
+        /// 获取登录URL
         /// </summary>
-        /// <param name="coreUser">Core user token</param>
-        /// <returns>Result</returns>
-        protected virtual async ValueTask<IActionResult> ExchangeTokenRepoAsync(CurrentUser coreUser)
+        /// <param name="state">Request state</param>
+        /// <param name="loginHint">Login hint</param>
+        /// <returns>URL</returns>
+        public string GetLogInUrl(string state, string? loginHint = null)
         {
-            // Parameters
-            var parameters = new DbParameters();
-            parameters.Add("User", coreUser.IdInt);
-            parameters.Add("UserUid", coreUser.Uid);
-            parameters.Add("UserName", coreUser.Name);
-            parameters.Add("Organization", coreUser.Organization);
-            parameters.Add("OrganizationName", coreUser.OrganizationName);
-            parameters.Add("RoleValue", coreUser.RoleValue);
-            parameters.Add("Avatar", coreUser.Avatar);
-
-            var command = CreateCommand(GetCommandName("exchange token"), parameters);
-            return await QueryAsResultAsync(command);
+            return GetServerAuthUrl(AuthExtentions.LogInAction, state, App.Configuration.Scopes, false, loginHint);
         }
 
         /// <summary>
-        /// Async exchange token
-        /// 异步交换令牌
+        /// Get sign up URL
+        /// 获取注册URL
         /// </summary>
-        /// <typeparam name="T">Generic user type</typeparam>
-        /// <param name="tokenEncrypted">Token encrypted</param>
-        /// <param name="device">Device identifier (readable name)</param>
-        /// <param name="ip">IP</param>
-        /// <param name="connectionId">Connection id</param>
-        /// <returns>Result</returns>
-        public async Task<IActionResult> ExchangeTokenAsync(string tokenEncrypted, string device, IPAddress ip, string? connectionId = null)
+        /// <param name="state">Request state</param>
+        /// <returns>URL</returns>
+        public string GetSignUpUrl(string state)
         {
-            try
+            return GetServerAuthUrl(AuthExtentions.SignUpAction, state, App.Configuration.Scopes);
+        }
+
+        /// <summary>
+        /// Get server auth URL, for back-end processing
+        /// 获取服务器授权URL，用于后端处理
+        /// </summary>
+        /// <param name="action">Action of the request</param>
+        /// <param name="state">Specifies any string value that your application uses to maintain state between your authorization request and the authorization server's response</param>
+        /// <param name="scope">A space-delimited list of scopes that identify the resources that your application could access on the user's behalf</param>
+        /// <param name="offline">Set to true if your application needs to refresh access tokens when the user is not present at the browser</param>
+        /// <param name="loginHint">Set the parameter value to an email address or sub identifier, which is equivalent to the user's identifier ID</param>
+        /// <returns>URL</returns>
+        public string GetServerAuthUrl(string action, string state, string scope, bool offline = false, string? loginHint = null)
+        {
+            var url = GetAuthUrl($"{App.Configuration.ServerRedirectUrl}/{action}", "code", scope, state, loginHint);
+            if (offline)
             {
-                // Service passphrase
-                var passphrase = App.Configuration.ServiceId.ToString();
+                url += "&access_type=offline";
+            }
+            return url;
+        }
 
-                // Decrypt token
-                var token = Decrypt(tokenEncrypted, passphrase, 120, true);
-                if (string.IsNullOrEmpty(token))
+        /// <summary>
+        /// Get script auth URL, for front-end page
+        /// 获取脚本授权URL，用于前端页面
+        /// </summary>
+        /// <param name="action">Action of the request</param>
+        /// <param name="state">Specifies any string value that your application uses to maintain state between your authorization request and the authorization server's response</param>
+        /// <param name="scope">A space-delimited list of scopes that identify the resources that your application could access on the user's behalf</param>
+        /// <param name="loginHint">Set the parameter value to an email address or sub identifier, which is equivalent to the user's identifier ID</param>
+        /// <returns>URL</returns>
+        public string GetScriptAuthUrl(string action, string state, string scope, string? loginHint = null)
+        {
+            return GetAuthUrl($"{App.Configuration.ScriptRedirectUrl}/{action}", "token", scope, state, loginHint);
+        }
+
+        /// <summary>
+        /// Get auth URL
+        /// 获取授权URL
+        /// </summary>
+        /// <param name="redirectUrl">The value must exactly match one of the authorized redirect URIs for the OAuth 2.0 client, which you configured in your client's API Console</param>
+        /// <param name="responseType">Set the parameter value to 'code' for web server applications or 'token' for SPA</param>
+        /// <param name="scope">A space-delimited list of scopes that identify the resources that your application could access on the user's behalf</param>
+        /// <param name="state">Specifies any string value that your application uses to maintain state between your authorization request and the authorization server's response</param>
+        /// <param name="loginHint">Set the parameter value to an email address or sub identifier, which is equivalent to the user's identifer ID</param>
+        /// <returns>URL</returns>
+        /// <exception cref="ArgumentNullException">Parameter 'redirectUrl' is required</exception>
+        public string GetAuthUrl(string? redirectUrl, string responseType, string scope, string state, string? loginHint = null)
+        {
+            if (string.IsNullOrEmpty(redirectUrl))
+            {
+                throw new ArgumentNullException(nameof(redirectUrl));
+            }
+
+            var rq = new SortedDictionary<string, string>()
+            {
+                { "scope", scope },
+                { "response_type", responseType },
+                { "state", state },
+                { "redirect_uri", redirectUrl },
+                { "app_id", App.Configuration.AppId.ToString() },
+                { "app_key", App.Configuration.AppKey }
+            };
+
+            if (!string.IsNullOrEmpty(loginHint))
+            {
+                rq.Add("login_hint", loginHint);
+            }
+
+            // With an extra '&' at the end
+            var query = rq.JoinAsQuery().TrimEnd('&');
+
+            // Siganature
+            var sign = Convert.ToHexString(CryptographyUtils.HMACSHA256(query, App.Configuration.AppSecret));
+
+            return $"{App.Configuration.Endpoint}?{query}&sign={sign}";
+        }
+
+        /// <summary>
+        /// Create access token from authorization code
+        /// 从授权码创建访问令牌
+        /// </summary>
+        /// <param name="action">Request action</param>
+        /// <param name="code">Authorization code</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Token data</returns>
+        public async ValueTask<AppTokenData?> CreateTokenAsync(string action, string code, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(App.Configuration.ServerRedirectUrl))
+            {
+                throw new Exception("ServerRedirectUrl is required for server side authentication");
+            }
+
+            var rq = new SortedDictionary<string, string>
+            {
+                ["code"] = code,
+                ["app_id"] = App.Configuration.AppId.ToString(),
+                ["app_key"] = App.Configuration.AppKey,
+                ["redirect_uri"] = $"{App.Configuration.ServerRedirectUrl}/{action}"
+            };
+
+            // With an extra '&' at the end
+            var query = rq.JoinAsQuery().TrimEnd('&');
+
+            // Siganature
+            var sign = Convert.ToHexString(CryptographyUtils.HMACSHA256(query, App.Configuration.AppSecret));
+            rq["sign"] = sign;
+
+            var api = $"{App.Configuration.Endpoint}/api/Auth/OAuthCreateToken";
+            var response = await _clientFactory.CreateClient().PostAsync(api, new FormUrlEncodedContent(rq), cancellationToken);
+
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync(ModelJsonSerializerContext.Default.AppTokenData, cancellationToken);
+        }
+
+        /// <summary>
+        /// Refresh the access token with refresh token
+        /// 用刷新令牌获取访问令牌
+        /// </summary>
+        /// <param name="refreshToken">Refresh token</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result</returns>
+        public async Task<AppTokenData?> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
+        {
+            var rq = new SortedDictionary<string, string>
+            {
+                ["app_id"] = App.Configuration.AppId.ToString(),
+                ["app_key"] = App.Configuration.AppKey,
+                ["refresh_token"] = refreshToken
+            };
+
+            // With an extra '&' at the end
+            var query = rq.JoinAsQuery().TrimEnd('&');
+
+            // Siganature
+            var sign = Convert.ToHexString(CryptographyUtils.HMACSHA256(query, App.Configuration.AppSecret));
+            rq["sign"] = sign;
+
+            var api = $"{App.Configuration.Endpoint}/api/Auth/OAuthRefreshToken";
+            var response = await _clientFactory.CreateClient().PostAsync(api, new FormUrlEncodedContent(rq), cancellationToken);
+
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync(ModelJsonSerializerContext.Default.AppTokenData, cancellationToken);
+        }
+
+        /// <summary>
+        /// Get user info
+        /// 获取用户信息
+        /// </summary>
+        /// <param name="tokenData">Token data</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result</returns>
+        public async ValueTask<CurrentUser?> GetUserInfoAsync(AppTokenData tokenData, CancellationToken cancellationToken = default)
+        {
+            if (!string.IsNullOrEmpty(tokenData.IdToken))
+            {
+                var (cp, _) = _authService.ValidateIdToken(tokenData.IdToken, App.Configuration.AppSecret);
+                var user = CurrentUser.Create(cp);
+                return user;
+            }
+
+            var client = _clientFactory.CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenData.AccessToken);
+
+            var api = $"{App.Configuration.Endpoint}/api/Auth/OAuthUserInfo";
+
+            var response = await client.GetAsync(api, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync(ModelJsonSerializerContext.Default.CurrentUser, cancellationToken);
+        }
+
+        /// <summary>
+        /// Get user info from callback request
+        /// 从回调请求获取用户信息
+        /// </summary>
+        /// <param name="request">Callback request</param>
+        /// <param name="state">Request state</param>
+        /// <param name="action">Request action</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Action result & user information</returns>
+        public ValueTask<(IActionResult result, AuthUserInfo? userInfo)> GetUserInfoAsync(HttpRequest request, string state, string? action = null, CancellationToken cancellationToken = default)
+        {
+            return GetUserInfoAsync(request, s => s == state, action, cancellationToken);
+        }
+
+        /// <summary>
+        /// Get user info from callback request
+        /// 从回调请求获取用户信息
+        /// </summary>
+        /// <param name="request">Callback request</param>
+        /// <param name="stateCallback">Callback to verify request state</param>
+        /// <param name="action">Request action</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Action result & user information</returns>
+        public async ValueTask<(IActionResult result, AuthUserInfo? userInfo)> GetUserInfoAsync(HttpRequest request, Func<string, bool> stateCallback, string? action = null, CancellationToken cancellationToken = default)
+        {
+            var (result, tokenData) = await ValidateAuthAsync(request, stateCallback, action, cancellationToken);
+            AuthUserInfo? userInfo = null;
+            if (result.Ok && tokenData != null)
+            {
+                var data = await GetUserInfoAsync(tokenData, cancellationToken);
+                if (data == null)
                 {
-                    return ApplicationErrors.NoValidData.AsResult("Token");
-                }
-
-                // Validate the token from core system first
-                var (claims, expired, _, _) = _authService.ValidateToken(token, $"Service{App.Configuration.ServiceId}");
-                if (claims == null)
-                {
-                    return ApplicationErrors.NoValidData.AsResult("Claims");
-                }
-
-                var coreUser = CurrentUser.Create(claims);
-                if (coreUser == null || expired)
-                {
-                    return ApplicationErrors.TokenExpired.AsResult();
-                }
-
-                // Organization and Uid are required
-                if (coreUser.Organization == null || coreUser.Uid == null)
-                {
-                    return ApplicationErrors.NoValidData.AsResult("Organization");
-                }
-
-                if (ip == null || !ip.Equals(coreUser.ClientIp))
-                {
-                    return ApplicationErrors.IPAddressChanged.AsResult();
-                }
-
-                var result = await ExchangeTokenRepoAsync(coreUser);
-
-                if (result.Ok)
-                {
-                    // Copy data
-                    result.Data["DeviceId"] = coreUser.DeviceId;
-
-                    // Core system Uid = GUID
-                    // Local system Uid = Global user id
-                    // result.Data["Uid"] = coreUser.Uid;
-
-                    // T.Create result is an interface, cannot cast back to T
-                    var user = U.Create(result.Data, ip, coreUser.Language, coreUser.Region, connectionId);
-                    if (user == null)
+                    result = new ActionResult
                     {
-                        Logger.LogDebug("Create user {type} failed with {result}", typeof(C), result.Data);
-                        return ApplicationErrors.NoUserFound.AsResult();
-                    }
-                    result.Data[Constants.TokenName] = _authService.CreateAccessToken(user);
-
-                    // Service passphase & device id
-                    var servicePassphrase = CryptographyUtils.CreateRandString(RandStringKind.All, 32).ToString();
-                    result.Data[Constants.ServiceDeviceName] = Encrypt(servicePassphrase, device, 1);
-                    result.Data[Constants.ServicePassphrase] = EncryptWeb(servicePassphrase, passphrase);
-
-                    // Expiry seconds
-                    result.Data[Constants.SecondsName] = _authService.AccessTokenMinutes * 60;
-
-                    // Remove user id / organization id to avoid information leaking
-                    result.Data.Remove("Id");
-                    result.Data.Remove("Organization");
+                        Type = "NoDataReturned",
+                        Field = "userinfo"
+                    };
                 }
+                else
+                {
+                    userInfo = new AuthUserInfo
+                    {
+                        OpenId = data.Uid ?? data.Id.ToString(),
+                        Name = data.Name,
+                        Picture = data.Avatar
+                    };
+                }
+            }
 
-                return result;
-            }
-            catch (Exception ex)
+            return (result, userInfo);
+        }
+
+        /// <summary>
+        /// Validate auth callback
+        /// 验证认证回调
+        /// </summary>
+        /// <param name="request">Callback request</param>
+        /// <param name="stateCallback">Callback to verify request state</param>
+        /// <param name="action">Request action</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Action result & Token data</returns>
+        public async Task<(IActionResult result, AppTokenData? tokenData)> ValidateAuthAsync(HttpRequest request, Func<string, bool> stateCallback, string? action = null, CancellationToken cancellationToken = default)
+        {
+            IActionResult result;
+            AppTokenData? tokenData = null;
+
+            if (request.Query.TryGetValue("error", out var error))
             {
-                // Return action result
-                return LogException(ex);
+                var field = request.Query["error_field"].ToString();
+
+                result = new ActionResult
+                {
+                    Type = "AccessDenied",
+                    Field = field,
+                    Title = error
+                };
             }
+            else if (request.Query.TryGetValue("state", out var actualState) && request.Query.TryGetValue("code", out var codeSource))
+            {
+                var code = codeSource.ToString();
+                if (!stateCallback(actualState.ToString()))
+                {
+                    result = new ActionResult
+                    {
+                        Type = "AccessDenied",
+                        Field = "state"
+                    };
+                }
+                else if (string.IsNullOrEmpty(code))
+                {
+                    result = new ActionResult
+                    {
+                        Type = "NoDataReturned",
+                        Field = "code"
+                    };
+                }
+                else
+                {
+                    try
+                    {
+                        action ??= request.GetRequestAction();
+                        tokenData = await CreateTokenAsync(action, code, cancellationToken);
+                        if (tokenData == null)
+                        {
+                            result = new ActionResult
+                            {
+                                Type = "NoDataReturned",
+                                Field = "token"
+                            };
+                        }
+                        else
+                        {
+                            result = ActionResult.Success;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex, "Create token failed");
+                        result = ActionResult.From(ex);
+                    }
+                }
+            }
+            else
+            {
+                result = new ActionResult
+                {
+                    Type = "NoDataReturned",
+                    Field = "state"
+                };
+            }
+
+            return (result, tokenData);
         }
     }
 }

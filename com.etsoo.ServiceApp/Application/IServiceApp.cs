@@ -2,7 +2,6 @@
 using com.etsoo.CoreFramework.Authentication;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
-using MySql.Data.MySqlClient;
 using Npgsql;
 using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
@@ -24,6 +23,12 @@ namespace com.etsoo.ServiceApp.Application
         /// 验证服务
         /// </summary>
         IAuthService? AuthService { get; init; }
+
+        /// <summary>
+        /// Get exchange key
+        /// </summary>
+        /// <returns>Result</returns>
+        string GetExchangeKey();
 
         /// <summary>
         /// Exchange data encryption
@@ -66,12 +71,6 @@ namespace com.etsoo.ServiceApp.Application
     /// Sqlite服务程序接口
     /// </summary>
     public interface ISqliteApp<S> : IServiceBaseApp<S, SqliteConnection> where S : ServiceAppConfiguration { }
-
-    /// <summary>
-    /// MySql service application interface
-    /// MySql服务程序接口
-    /// </summary>
-    public interface IMySqlApp<S> : IServiceBaseApp<S, MySqlConnection> where S : ServiceAppConfiguration { }
 
     /// <summary>
     /// PostgreSql service application interface

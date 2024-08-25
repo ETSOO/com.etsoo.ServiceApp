@@ -100,7 +100,7 @@ namespace com.etsoo.ServiceApp.Tools
         {
             var rq = new ApiServiceRQ { Api = apiService, OrganizationId = globalOrganizationId, UserId = globalUserId };
             var key = await _app.ExchangeDataAsync(rq, ApiModel.ApiModelJsonSerializerContext.Default.ApiServiceRQ);
-            return await _smartERPProxy.AuthorizeApiServiceAsync(_app.Configuration.ServiceId, key, cancellationToken);
+            return await _smartERPProxy.AuthorizeApiServiceAsync(_app.Configuration.AppId, key, cancellationToken);
         }
 
         /// <summary>
@@ -123,7 +123,7 @@ namespace com.etsoo.ServiceApp.Tools
 
             return await _smartERPProxy.AuthorizeApiServicesAsync(new AuthorizeApiServicesRQ
             {
-                Id = _app.Configuration.ServiceId,
+                Id = _app.Configuration.AppId,
                 Keys = keys,
                 IncludeAll = includeAll
             }, cancellationToken);
@@ -162,7 +162,7 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="culture">Culture</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, string? culture = null, CancellationToken cancellationToken = default) where T : IServiceUser, IUserCreator<T>
+        public async Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, string? culture = null, CancellationToken cancellationToken = default) where T : ICurrentUser, IUserCreator<T>
         {
             // Query user
             var userDataResult = await _app.GetApiUserDataAsync(orgId, userId, deviceId, cancellationToken);
@@ -195,7 +195,7 @@ namespace com.etsoo.ServiceApp.Tools
         /// <param name="deviceId">Device id</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, CancellationToken cancellationToken = default) where T : IServiceUser, IUserCreator<T>
+        public Task<T?> CreateUserAsync<T>(int orgId, int userId = 0, int deviceId = 0, CancellationToken cancellationToken = default) where T : ICurrentUser, IUserCreator<T>
         {
             return CreateUserAsync<T>(orgId, userId, deviceId, null, cancellationToken);
         }
@@ -211,7 +211,7 @@ namespace com.etsoo.ServiceApp.Tools
         /// <returns>Message id</returns>
         public async Task<string> SendEmailAsync(ApiServiceEnum apiService, string key, SendEmailDto data, CancellationToken cancellationToken = default)
         {
-            return await _messageQueueProducer.SendEmailAsync(_app.Configuration.ServiceId, apiService, key, data, cancellationToken);
+            return await _messageQueueProducer.SendEmailAsync(_app.Configuration.AppId, apiService, key, data, cancellationToken);
         }
     }
 }
