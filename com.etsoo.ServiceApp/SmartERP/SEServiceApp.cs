@@ -16,10 +16,6 @@ namespace com.etsoo.ServiceApp.SmartERP
         public SEServiceApp(IServiceCollection services, ServiceAppConfiguration configuration, IDatabase<NpgsqlConnection> db, JwtSettings? jwtSettings, JwtBearerEvents? events = null, bool modelValidated = false)
             : base(services, configuration, db, jwtSettings, events, modelValidated)
         {
-            if (jwtSettings != null)
-            {
-                AuthService = new JwtService(services, jwtSettings, events);
-            }
         }
     }
 }
