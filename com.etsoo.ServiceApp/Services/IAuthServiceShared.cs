@@ -3,6 +3,7 @@ using com.etsoo.CoreFramework.Models;
 using com.etsoo.CoreFramework.Services;
 using com.etsoo.CoreFramework.User;
 using com.etsoo.Utils.Actions;
+using com.etsoo.Web;
 using Microsoft.AspNetCore.Http;
 
 namespace com.etsoo.ServiceApp.Services
@@ -51,5 +52,24 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Action result & Token data & actual state</returns>
         Task<(IActionResult result, AppTokenData? tokenData, string? state)> ValidateAuthAsync(HttpRequest request, Func<string, bool> stateCallback, string? action = null, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get log in URL result
+        /// 获取登录URL结果
+        /// </summary>
+        /// <param name="client">Auth client</param>
+        /// <param name="userAgent">User agent</param>
+        /// <param name="deviceId">Region (like CN) & Device id</param>
+        /// <returns>Result</returns>
+        IResult GetLogInUrlResult(string? userAgent, string deviceId);
+
+        /// <summary>
+        /// Log in from OAuth2 client
+        /// 从OAuth2客户端登录
+        /// </summary>
+        /// <param name="context">OAuth2 Request HTTPContext</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Action result & current user & login data</returns>
+        ValueTask<(IActionResult result, CurrentUser? user, AuthLoginValidateData? data)> LogInAsync(HttpContext context, CancellationToken cancellationToken = default);
     }
 }

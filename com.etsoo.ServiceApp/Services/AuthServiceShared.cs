@@ -3,9 +3,12 @@ using com.etsoo.CoreFramework.Models;
 using com.etsoo.CoreFramework.Services;
 using com.etsoo.CoreFramework.User;
 using com.etsoo.ServiceApp.Application;
+using com.etsoo.UserAgentParser;
 using com.etsoo.Utils.Actions;
 using com.etsoo.Utils.Crypto;
 using com.etsoo.Utils.String;
+using com.etsoo.Web;
+using com.etsoo.WebUtils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Data.Common;
@@ -373,6 +376,78 @@ namespace com.etsoo.ServiceApp.Services
             }
 
             return (result, tokenData, state);
+        }
+
+        /// <summary>
+        /// Get log in URL result
+        /// 获取登录URL结果
+        /// </summary>
+        /// <param name="client">Auth client</param>
+        /// <param name="userAgent">User agent</param>
+        /// <param name="deviceId">Region (like CN) & Device id</param>
+        /// <returns>Result</returns>
+        public IResult GetLogInUrlResult(string? userAgent, string deviceId)
+        {
+            if (!this.CheckDevice(userAgent, deviceId[2..], out var result, out _))
+            {
+                return Results.BadRequest(result);
+            }
+            else
+            {
+                return Results.Content(GetLogInUrl(deviceId), "text/plain");
+            }
+        }
+
+        /// <summary>
+        /// Log in from OAuth2 client
+        /// 从OAuth2客户端登录
+        /// </summary>
+        /// <param name="context">OAuth2 Request HTTPContext</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Action result & current user & login data</returns>
+        public async ValueTask<(IActionResult result, CurrentUser? user, AuthLoginValidateData? data)> LogInAsync(HttpContext context, CancellationToken cancellationToken = default)
+        {
+            (string DeviceCore, UAParser Parser)? parser = null;
+            string? region = null;
+            string? deviceId = null;
+            CurrentUser? user = null;
+
+            var (result, tokenData, state) = await ValidateAuthAsync(context.Request, (s) =>
+            {
+                // We put the region code like 'CN' at the beginning of the device id
+                region = s[..2];
+
+                // The device id is the rest of the string
+                deviceId = s[2..];
+
+                return this.CheckDevice(context.UserAgent(), deviceId.Replace(" ", "+"), out _, out parser);
+            }, AuthExtentions.LogInAction, cancellationToken);
+
+            if (result.Ok && tokenData != null)
+            {
+                user = await GetUserInfoAsync(tokenData, cancellationToken);
+                if (user == null)
+                {
+                    result = new ActionResult
+                    {
+                        Type = "NoDataReturned",
+                        Field = "userinfo"
+                    };
+                }
+            }
+
+            AuthLoginValidateData? data = null;
+            if (parser != null && region != null && deviceId != null)
+            {
+                data = new AuthLoginValidateData
+                {
+                    DeviceId = deviceId,
+                    Region = region,
+                    Parser = parser.Value.Parser
+                };
+            }
+
+            return (result, user, data);
         }
     }
 }
