@@ -55,6 +55,20 @@ namespace com.etsoo.ServiceApp.Application
         /// </summary>
         [Url]
         public string? ScriptRedirectUrl { get; set; }
+
+        /// <summary>
+        /// Authorization failure URL
+        /// 授权失败地址
+        /// </summary>
+        [Url]
+        public string? AuthFailureUrl { get; set; }
+
+        /// <summary>
+        /// Authorization success URL
+        /// 授权成功地址
+        /// </summary>
+        [Url]
+        public string? AuthSuccessUrl { get; set; }
     }
 
     [OptionsValidator]

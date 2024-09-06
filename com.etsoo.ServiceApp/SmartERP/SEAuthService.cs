@@ -12,7 +12,8 @@ namespace com.etsoo.ServiceApp.SmartERP
     /// </summary>
     public class SEAuthService : AuthServiceShared<ServiceAppConfiguration, NpgsqlConnection, ISEServiceApp, CurrentUser>, ISEAuthService
     {
-        public SEAuthService(ISEServiceApp app, CurrentUser? user, ILogger<SEAuthService> logger, IHttpClientFactory clientFactory) : base(app, user, logger, clientFactory)
+        public SEAuthService(ISEServiceApp app, IUserAccessor<CurrentUser> userAccessor, ILogger<SEAuthService> logger, IHttpClientFactory clientFactory)
+            : base(app, userAccessor, logger, clientFactory)
         {
         }
     }

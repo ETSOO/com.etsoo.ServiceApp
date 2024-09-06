@@ -6,6 +6,7 @@ using com.etsoo.ServiceApp.Application;
 using com.etsoo.UserAgentParser;
 using com.etsoo.Utils.Actions;
 using com.etsoo.Utils.Crypto;
+using com.etsoo.Utils.Serialization;
 using com.etsoo.Utils.String;
 using com.etsoo.Web;
 using com.etsoo.WebUtils;
@@ -14,6 +15,8 @@ using Microsoft.Extensions.Logging;
 using System.Data.Common;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Web;
 
 namespace com.etsoo.ServiceApp.Services
 {
@@ -38,8 +41,8 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="app">Application</param>
         /// <param name="logger">Logger</param>
         /// <param name="accessor">Http context accessor</param>
-        public AuthServiceShared(A app, U? user, ILogger<AuthServiceShared<S, C, A, U>> logger, IHttpClientFactory clientFactory)
-            : base(app, user, "auth", logger)
+        public AuthServiceShared(A app, IUserAccessor<U> userAccessor, ILogger<AuthServiceShared<S, C, A, U>> logger, IHttpClientFactory clientFactory)
+            : base(app, userAccessor.User, "auth", logger)
         {
             if (app.AuthService == null) throw new NullReferenceException(nameof(app.AuthService));
             _authService = app.AuthService;
@@ -394,7 +397,8 @@ namespace com.etsoo.ServiceApp.Services
             }
             else
             {
-                return Results.Content(GetLogInUrl(deviceId), "text/plain");
+                var url = GetServerAuthUrl(AuthExtentions.LogInAction, deviceId, App.Configuration.Scopes, true);
+                return Results.Content(url, "text/plain");
             }
         }
 
@@ -404,8 +408,8 @@ namespace com.etsoo.ServiceApp.Services
         /// </summary>
         /// <param name="context">OAuth2 Request HTTPContext</param>
         /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Action result & current user & login data</returns>
-        public async ValueTask<(IActionResult result, CurrentUser? user, AuthLoginValidateData? data)> LogInAsync(HttpContext context, CancellationToken cancellationToken = default)
+        /// <returns>Action result & current user & Token data & login data</returns>
+        public async ValueTask<(IActionResult result, CurrentUser? user, AppTokenData? tokenData, AuthLoginValidateData? data)> LogInAsync(HttpContext context, CancellationToken cancellationToken = default)
         {
             (string DeviceCore, UAParser Parser)? parser = null;
             string? region = null;
@@ -447,7 +451,51 @@ namespace com.etsoo.ServiceApp.Services
                 };
             }
 
-            return (result, user, data);
+            return (result, user, tokenData, data);
+        }
+
+        /// <summary>
+        /// Log in from OAuth2 client and authorized
+        /// 从OAuth2客户端登录并授权
+        /// </summary>
+        /// <param name="context">OAuth2 Request HTTPContext</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Action result & current user & login data</returns>
+        public async ValueTask AuthLogInAsync(HttpContext context, CancellationToken cancellationToken = default)
+        {
+            var (result, user, tokenData, _) = await LogInAsync(context, cancellationToken);
+
+            if (result.Ok)
+            {
+                if (user == null || tokenData == null)
+                {
+                    result = new ActionResult
+                    {
+                        Type = "NoDataReturned",
+                        Field = "user"
+                    };
+                }
+                else if (tokenData.RefreshToken == null)
+                {
+                    result = new ActionResult
+                    {
+                        Type = "NoDataReturned",
+                        Field = "refreshtoken"
+                    };
+                }
+                else
+                {
+                    // Redirect to the success URL
+                    var successUrl = App.Configuration.AuthSuccessUrl;
+                    context.Response.Redirect($"{successUrl}", true);
+                    return;
+                }
+            }
+
+            // Redirect to the failure URL
+            var url = App.Configuration.AuthFailureUrl;
+            var jsonResult = JsonSerializer.Serialize(result, CommonJsonSerializerContext.Default.ActionResult);
+            context.Response.Redirect($"{url}?error={HttpUtility.UrlEncode(jsonResult)}", true);
         }
     }
 }

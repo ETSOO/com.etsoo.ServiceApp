@@ -69,7 +69,16 @@ namespace com.etsoo.ServiceApp.Services
         /// </summary>
         /// <param name="context">OAuth2 Request HTTPContext</param>
         /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Action result & current user & Token data & login data</returns>
+        ValueTask<(IActionResult result, CurrentUser? user, AppTokenData? tokenData, AuthLoginValidateData? data)> LogInAsync(HttpContext context, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Log in from OAuth2 client and authorized
+        /// 从OAuth2客户端登录并授权
+        /// </summary>
+        /// <param name="context">OAuth2 Request HTTPContext</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Action result & current user & login data</returns>
-        ValueTask<(IActionResult result, CurrentUser? user, AuthLoginValidateData? data)> LogInAsync(HttpContext context, CancellationToken cancellationToken = default);
+        ValueTask AuthLogInAsync(HttpContext context, CancellationToken cancellationToken = default);
     }
 }
