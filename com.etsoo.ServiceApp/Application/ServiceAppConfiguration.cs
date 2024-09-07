@@ -14,14 +14,14 @@ namespace com.etsoo.ServiceApp.Application
         /// Application id
         /// 程序编号
         /// </summary>
+        [Required]
         public int AppId { get; set; }
 
         /// <summary>
         /// Application key
         /// 程序键名
         /// </summary>
-        [Required]
-        public string AppKey { get; set; } = default!;
+        public string AppKey { get; set; } = string.Empty;
 
         /// <summary>
         /// Application secret

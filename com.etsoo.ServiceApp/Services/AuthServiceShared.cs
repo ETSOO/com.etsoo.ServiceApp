@@ -141,12 +141,16 @@ namespace com.etsoo.ServiceApp.Services
             }
 
             // With an extra '&' at the end
-            var query = rq.JoinAsQuery().TrimEnd('&');
+            var query = rq.JoinAsString().TrimEnd('&');
 
             // Siganature
             var sign = Convert.ToHexString(CryptographyUtils.HMACSHA256(query, App.Configuration.AppSecret));
+            rq["sign"] = sign;
 
-            return $"{App.Configuration.Endpoint}?{query}&sign={sign}";
+            // Request data to JSON
+            var jsonRQ = JsonSerializer.Serialize(rq, CommonJsonSerializerContext.Default.DictionaryStringString);
+
+            return $"{App.Configuration.Endpoint}?auth={HttpUtility.UrlEncode(jsonRQ)}";
         }
 
         /// <summary>
