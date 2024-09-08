@@ -148,7 +148,7 @@ namespace com.etsoo.ServiceApp.Services
             rq["sign"] = sign;
 
             // Request data to JSON
-            var jsonRQ = JsonSerializer.Serialize(rq, CommonJsonSerializerContext.Default.DictionaryStringString);
+            var jsonRQ = JsonSerializer.Serialize(rq, CommonJsonSerializerContext.Default.IDictionaryStringString);
 
             return $"{App.Configuration.Endpoint}?auth={HttpUtility.UrlEncode(jsonRQ)}";
         }
