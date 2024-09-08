@@ -150,7 +150,7 @@ namespace com.etsoo.ServiceApp.Services
             // Request data to JSON
             var jsonRQ = JsonSerializer.Serialize(rq, CommonJsonSerializerContext.Default.IDictionaryStringString);
 
-            return $"{App.Configuration.AppWebUrl}?auth={HttpUtility.UrlEncode(jsonRQ)}";
+            return $"{App.Configuration.WebUrl}?auth={HttpUtility.UrlEncode(jsonRQ)}";
         }
 
         /// <summary>
@@ -183,7 +183,7 @@ namespace com.etsoo.ServiceApp.Services
             var sign = Convert.ToHexString(CryptographyUtils.HMACSHA256(query, App.Configuration.AppSecret));
             rq["sign"] = sign;
 
-            var api = $"{App.Configuration.AppApiUrl}/Auth/OAuthCreateToken";
+            var api = $"{App.Configuration.ApiUrl}/Auth/OAuthCreateToken";
             var response = await _clientFactory.CreateClient().PostAsync(api, new FormUrlEncodedContent(rq), cancellationToken);
 
             response.EnsureSuccessStatusCode();
@@ -214,7 +214,7 @@ namespace com.etsoo.ServiceApp.Services
             var sign = Convert.ToHexString(CryptographyUtils.HMACSHA256(query, App.Configuration.AppSecret));
             rq["sign"] = sign;
 
-            var api = $"{App.Configuration.AppApiUrl}/Auth/OAuthRefreshToken";
+            var api = $"{App.Configuration.ApiUrl}/Auth/OAuthRefreshToken";
             var response = await _clientFactory.CreateClient().PostAsync(api, new FormUrlEncodedContent(rq), cancellationToken);
 
             response.EnsureSuccessStatusCode();
@@ -241,7 +241,7 @@ namespace com.etsoo.ServiceApp.Services
             var client = _clientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenData.AccessToken);
 
-            var api = $"{App.Configuration.AppApiUrl}/Auth/OAuthUserInfo";
+            var api = $"{App.Configuration.ApiUrl}/Auth/OAuthUserInfo";
 
             var response = await client.GetAsync(api, cancellationToken);
             response.EnsureSuccessStatusCode();
