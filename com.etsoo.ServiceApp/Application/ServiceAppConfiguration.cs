@@ -11,6 +11,20 @@ namespace com.etsoo.ServiceApp.Application
     public record ServiceAppConfiguration : AppConfiguration
     {
         /// <summary>
+        /// Application web url
+        /// 程序网页地址
+        /// </summary>
+        [Url]
+        public string AppWebUrl { get; set; } = "http://localhost";
+
+        /// <summary>
+        /// Application Api url
+        /// 程序接口地址
+        /// </summary>
+        [Url]
+        public string AppApiUrl { get; set; } = "http://localhost/api";
+
+        /// <summary>
         /// Application id
         /// 程序编号
         /// </summary>
@@ -29,14 +43,6 @@ namespace com.etsoo.ServiceApp.Application
         /// </summary>
         [Required]
         public string AppSecret { get; set; } = default!;
-
-        /// <summary>
-        /// Core API endpoint
-        /// 核心接口地址
-        /// </summary>
-        [Url]
-        [Required]
-        public string Endpoint { get; set; } = default!;
 
         /// <summary>
         /// Permission scopes, space-delimited
