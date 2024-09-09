@@ -15,6 +15,19 @@ namespace com.etsoo.ServiceApp.Services
     public interface IAuthServiceShared : IServiceBase, IAuthClient
     {
         /// <summary>
+        /// Get server auth URL, for back-end processing
+        /// 获取服务器授权URL，用于后端处理
+        /// </summary>
+        /// <param name="action">Action of the request</param>
+        /// <param name="state">Specifies any string value that your application uses to maintain state between your authorization request and the authorization server's response</param>
+        /// <param name="tokenResponse">Is 'token' response, 'false' means 'code'</param>
+        /// <param name="scope">A space-delimited list of scopes that identify the resources that your application could access on the user's behalf</param>
+        /// <param name="offline">Set to true if your application needs to refresh access tokens when the user is not present at the browser</param>
+        /// <param name="loginHint">Set the parameter value to an email address or sub identifier, which is equivalent to the user's identifier ID</param>
+        /// <returns>URL</returns>
+        string GetServerAuthUrl(string action, string state, bool tokenResponse, string scope, bool offline = false, string? loginHint = null);
+
+        /// <summary>
         /// Create access token from authorization code
         /// 从授权码创建访问令牌
         /// </summary>

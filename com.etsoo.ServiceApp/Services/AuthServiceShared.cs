@@ -85,7 +85,23 @@ namespace com.etsoo.ServiceApp.Services
         /// <returns>URL</returns>
         public string GetServerAuthUrl(string action, string state, string scope, bool offline = false, string? loginHint = null)
         {
-            var url = GetAuthUrl($"{App.Configuration.ServerRedirectUrl}/{action}", "code", scope, state, loginHint);
+            return GetServerAuthUrl(action, state, false, scope, offline, loginHint);
+        }
+
+        /// <summary>
+        /// Get server auth URL, for back-end processing
+        /// 获取服务器授权URL，用于后端处理
+        /// </summary>
+        /// <param name="action">Action of the request</param>
+        /// <param name="state">Specifies any string value that your application uses to maintain state between your authorization request and the authorization server's response</param>
+        /// <param name="tokenResponse">Is 'token' response, 'false' means 'code'</param>
+        /// <param name="scope">A space-delimited list of scopes that identify the resources that your application could access on the user's behalf</param>
+        /// <param name="offline">Set to true if your application needs to refresh access tokens when the user is not present at the browser</param>
+        /// <param name="loginHint">Set the parameter value to an email address or sub identifier, which is equivalent to the user's identifier ID</param>
+        /// <returns>URL</returns>
+        public string GetServerAuthUrl(string action, string state, bool tokenResponse, string scope, bool offline = false, string? loginHint = null)
+        {
+            var url = GetAuthUrl($"{App.Configuration.ServerRedirectUrl}/{action}", tokenResponse ? "token" : "code", scope, state, loginHint);
             if (offline)
             {
                 url += "&access_type=offline";
@@ -128,16 +144,16 @@ namespace com.etsoo.ServiceApp.Services
             var rq = new SortedDictionary<string, string>()
             {
                 { "scope", scope },
-                { "response_type", responseType },
+                { "responseType", responseType },
                 { "state", state },
-                { "redirect_uri", redirectUrl },
-                { "app_id", App.Configuration.AppId.ToString() },
-                { "app_key", App.Configuration.AppKey }
+                { "redirectUri", redirectUrl },
+                { "appId", App.Configuration.AppId.ToString() },
+                { "appKey", App.Configuration.AppKey }
             };
 
             if (!string.IsNullOrEmpty(loginHint))
             {
-                rq.Add("login_hint", loginHint);
+                rq.Add("loginHint", loginHint);
             }
 
             // With an extra '&' at the end
@@ -171,9 +187,9 @@ namespace com.etsoo.ServiceApp.Services
             var rq = new SortedDictionary<string, string>
             {
                 ["code"] = code,
-                ["app_id"] = App.Configuration.AppId.ToString(),
-                ["app_key"] = App.Configuration.AppKey,
-                ["redirect_uri"] = $"{App.Configuration.ServerRedirectUrl}/{action}"
+                ["appId"] = App.Configuration.AppId.ToString(),
+                ["appKey"] = App.Configuration.AppKey,
+                ["redirectUri"] = $"{App.Configuration.ServerRedirectUrl}/{action}"
             };
 
             // With an extra '&' at the end
@@ -202,9 +218,9 @@ namespace com.etsoo.ServiceApp.Services
         {
             var rq = new SortedDictionary<string, string>
             {
-                ["app_id"] = App.Configuration.AppId.ToString(),
-                ["app_key"] = App.Configuration.AppKey,
-                ["refresh_token"] = refreshToken
+                ["appId"] = App.Configuration.AppId.ToString(),
+                ["appKey"] = App.Configuration.AppKey,
+                ["refreshToken"] = refreshToken
             };
 
             // With an extra '&' at the end
@@ -327,10 +343,9 @@ namespace com.etsoo.ServiceApp.Services
                     Title = error
                 };
             }
-            else if (request.Query.TryGetValue("state", out var actualState) && request.Query.TryGetValue("code", out var codeSource))
+            else if (request.Query.TryGetValue("state", out var actualState))
             {
                 state = actualState.ToString();
-                var code = codeSource.ToString();
                 if (!stateCallback(state))
                 {
                     result = new ActionResult
@@ -339,26 +354,18 @@ namespace com.etsoo.ServiceApp.Services
                         Field = "state"
                     };
                 }
-                else if (string.IsNullOrEmpty(code))
+                else if (request.Method == "POST")
                 {
-                    result = new ActionResult
-                    {
-                        Type = "NoDataReturned",
-                        Field = "code"
-                    };
-                }
-                else
-                {
+                    // Token with POST
                     try
                     {
-                        action ??= request.GetRequestAction();
-                        tokenData = await CreateTokenAsync(action, code, cancellationToken);
+                        tokenData = await request.ReadFromJsonAsync<AppTokenData>(cancellationToken);
                         if (tokenData == null)
                         {
                             result = new ActionResult
                             {
                                 Type = "NoDataReturned",
-                                Field = "token"
+                                Field = "post_token"
                             };
                         }
                         else
@@ -368,9 +375,55 @@ namespace com.etsoo.ServiceApp.Services
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError(ex, "Create token failed");
+                        Logger.LogError(ex, "Post token failed");
                         result = ActionResult.From(ex);
                     }
+                }
+                else if (request.Query.TryGetValue("code", out var codeSource))
+                {
+                    // Code with GET
+                    var code = codeSource.ToString();
+                    if (string.IsNullOrEmpty(code))
+                    {
+                        result = new ActionResult
+                        {
+                            Type = "NoDataReturned",
+                            Field = "code"
+                        };
+                    }
+                    else
+                    {
+                        try
+                        {
+                            action ??= request.GetRequestAction();
+                            tokenData = await CreateTokenAsync(action, code, cancellationToken);
+                            if (tokenData == null)
+                            {
+                                result = new ActionResult
+                                {
+                                    Type = "NoDataReturned",
+                                    Field = "token"
+                                };
+                            }
+                            else
+                            {
+                                result = ActionResult.Success;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError(ex, "Create token failed");
+                            result = ActionResult.From(ex);
+                        }
+                    }
+                }
+                else
+                {
+                    result = new ActionResult
+                    {
+                        Type = "NoDataReturned",
+                        Field = "code"
+                    };
                 }
             }
             else
@@ -401,7 +454,7 @@ namespace com.etsoo.ServiceApp.Services
             }
             else
             {
-                var url = GetServerAuthUrl(AuthExtentions.LogInAction, deviceId, App.Configuration.Scopes, true);
+                var url = GetServerAuthUrl(AuthExtentions.LogInAction, deviceId, true, App.Configuration.Scopes, true);
                 return Results.Content(url, "text/plain");
             }
         }
