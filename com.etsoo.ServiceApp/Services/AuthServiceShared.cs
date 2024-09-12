@@ -31,6 +31,9 @@ namespace com.etsoo.ServiceApp.Services
         where A : IServiceBaseApp<S, C>
         where U : ICurrentUser, IUserCreator<U>
     {
+        // 3 hours
+        const int EncryptionValidSeconds = 10800;
+
         readonly CoreFramework.Authentication.IAuthService _authService;
         readonly IHttpClientFactory _clientFactory;
 
@@ -137,37 +140,29 @@ namespace com.etsoo.ServiceApp.Services
         /// <exception cref="ArgumentNullException">Parameter 'redirectUrl' is required</exception>
         public string GetAuthUrl(string? redirectUrl, string responseType, string scope, string state, string? loginHint = null)
         {
-            if (string.IsNullOrEmpty(redirectUrl))
+            if (string.IsNullOrEmpty(redirectUrl) || !Uri.TryCreate(redirectUrl, UriKind.Absolute, out var uri))
             {
                 throw new ArgumentNullException(nameof(redirectUrl));
             }
 
-            var encryptedState = App.EncriptData(state);
+            var encryptedState = App.EncriptData(state, "", EncryptionValidSeconds);
 
-            var rq = new SortedDictionary<string, string>()
+            var rq = new AuthRequest
             {
-                { "scope", scope },
-                { "responseType", responseType },
-                { "state", encryptedState },
-                { "redirectUri", redirectUrl },
-                { "appId", App.Configuration.AppId.ToString() },
-                { "appKey", App.Configuration.AppKey }
+                AppId = App.Configuration.AppId,
+                AppKey = App.Configuration.AppKey,
+                LoginHint = loginHint,
+                RedirectUri = uri,
+                ResponseType = responseType,
+                Scope = scope,
+                State = encryptedState
             };
 
-            if (!string.IsNullOrEmpty(loginHint))
-            {
-                rq.Add("loginHint", loginHint);
-            }
-
-            // With an extra '&' at the end
-            var query = rq.JoinAsString().TrimEnd('&');
-
             // Siganature
-            var sign = Convert.ToHexString(CryptographyUtils.HMACSHA256(query, App.Configuration.AppSecret));
-            rq["sign"] = sign;
+            rq.Sign = rq.SignWith(App.Configuration.AppSecret);
 
             // Request data to JSON
-            var jsonRQ = JsonSerializer.Serialize(rq, CommonJsonSerializerContext.Default.IDictionaryStringString);
+            var jsonRQ = JsonSerializer.Serialize(rq, ModelJsonSerializerContext.Default.AuthRequest);
 
             return $"{App.Configuration.WebUrl}?auth={HttpUtility.UrlEncode(jsonRQ)}";
         }
