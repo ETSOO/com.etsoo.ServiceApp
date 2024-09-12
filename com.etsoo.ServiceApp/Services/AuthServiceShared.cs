@@ -101,7 +101,8 @@ namespace com.etsoo.ServiceApp.Services
         /// <returns>URL</returns>
         public string GetServerAuthUrl(string action, string state, bool tokenResponse, string scope, bool offline = false, string? loginHint = null)
         {
-            var url = GetAuthUrl($"{App.Configuration.ServerRedirectUrl}/{action}", tokenResponse ? "token" : "code", scope, state, loginHint);
+            var responseType = tokenResponse ? AuthRequest.TokenResponseType : AuthRequest.CodeResponseType;
+            var url = GetAuthUrl($"{App.Configuration.ServerRedirectUrl}/{action}", responseType, scope, state, loginHint);
             if (offline)
             {
                 url += "&access_type=offline";
@@ -120,7 +121,7 @@ namespace com.etsoo.ServiceApp.Services
         /// <returns>URL</returns>
         public string GetScriptAuthUrl(string action, string state, string scope, string? loginHint = null)
         {
-            return GetAuthUrl($"{App.Configuration.ScriptRedirectUrl}/{action}", "token", scope, state, loginHint);
+            return GetAuthUrl($"{App.Configuration.ScriptRedirectUrl}/{action}", AuthRequest.TokenResponseType, scope, state, loginHint);
         }
 
         /// <summary>
@@ -141,11 +142,13 @@ namespace com.etsoo.ServiceApp.Services
                 throw new ArgumentNullException(nameof(redirectUrl));
             }
 
+            var encryptedState = App.EncriptData(state);
+
             var rq = new SortedDictionary<string, string>()
             {
                 { "scope", scope },
                 { "responseType", responseType },
-                { "state", state },
+                { "state", encryptedState },
                 { "redirectUri", redirectUrl },
                 { "appId", App.Configuration.AppId.ToString() },
                 { "appKey", App.Configuration.AppKey }
@@ -354,12 +357,12 @@ namespace com.etsoo.ServiceApp.Services
                         Field = "state"
                     };
                 }
-                else if (request.Method == "POST")
+                else if (request.Query.TryGetValue(AuthRequest.TokenResponseType, out var tokenSource))
                 {
-                    // Token with POST
+                    // Token
                     try
                     {
-                        tokenData = await request.ReadFromJsonAsync<AppTokenData>(cancellationToken);
+                        tokenData = JsonSerializer.Deserialize(tokenSource.ToString(), ModelJsonSerializerContext.Default.AppTokenData);
                         if (tokenData == null)
                         {
                             result = new ActionResult
@@ -379,9 +382,9 @@ namespace com.etsoo.ServiceApp.Services
                         result = ActionResult.From(ex);
                     }
                 }
-                else if (request.Query.TryGetValue("code", out var codeSource))
+                else if (request.Query.TryGetValue(AuthRequest.CodeResponseType, out var codeSource))
                 {
-                    // Code with GET
+                    // Code
                     var code = codeSource.ToString();
                     if (string.IsNullOrEmpty(code))
                     {
@@ -473,8 +476,11 @@ namespace com.etsoo.ServiceApp.Services
             string? deviceId = null;
             CurrentUser? user = null;
 
-            var (result, tokenData, state) = await ValidateAuthAsync(context.Request, (s) =>
+            var (result, tokenData, state) = await ValidateAuthAsync(context.Request, (es) =>
             {
+                // Decrypt the state
+                var s = App.DecriptData(es);
+
                 // We put the region code like 'CN' at the beginning of the device id
                 region = s[..2];
 
