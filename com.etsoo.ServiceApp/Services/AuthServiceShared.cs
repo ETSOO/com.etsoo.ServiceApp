@@ -5,9 +5,7 @@ using com.etsoo.CoreFramework.User;
 using com.etsoo.ServiceApp.Application;
 using com.etsoo.UserAgentParser;
 using com.etsoo.Utils.Actions;
-using com.etsoo.Utils.Crypto;
 using com.etsoo.Utils.Serialization;
-using com.etsoo.Utils.String;
 using com.etsoo.Web;
 using com.etsoo.WebUtils;
 using Microsoft.AspNetCore.Http;
@@ -179,23 +177,22 @@ namespace com.etsoo.ServiceApp.Services
                 throw new Exception("ServerRedirectUrl is required for server side authentication");
             }
 
-            var rq = new SortedDictionary<string, string>
+            var rq = new AuthCreateTokenRQ
             {
-                ["code"] = code,
-                ["appId"] = App.Configuration.AppId.ToString(),
-                ["appKey"] = App.Configuration.AppKey,
-                ["redirectUri"] = $"{App.Configuration.ServerRedirectUrl}/{action}"
+                AppId = App.Configuration.AppId,
+                AppKey = App.Configuration.AppKey,
+                Code = code,
+                RedirectUri = new Uri($"{App.Configuration.ServerRedirectUrl}/{action}", UriKind.Absolute)
             };
 
-            // With an extra '&' at the end
-            var query = rq.JoinAsQuery().TrimEnd('&');
-
             // Siganature
-            var sign = Convert.ToHexString(CryptographyUtils.HMACSHA256(query, App.Configuration.AppSecret));
-            rq["sign"] = sign;
+            rq.Sign = rq.SignWith(App.Configuration.AppSecret);
+
+            using var jsonContent = JsonContent.Create(rq, ModelJsonSerializerContext.Default.AuthCreateTokenRQ);
 
             var api = $"{App.Configuration.ApiUrl}/Auth/OAuthCreateToken";
-            var response = await _clientFactory.CreateClient().PostAsync(api, new FormUrlEncodedContent(rq), cancellationToken);
+
+            using var response = await _clientFactory.CreateClient().PostAsync(api, jsonContent, cancellationToken);
 
             response.EnsureSuccessStatusCode();
 
@@ -211,22 +208,21 @@ namespace com.etsoo.ServiceApp.Services
         /// <returns>Result</returns>
         public async Task<AppTokenData?> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
         {
-            var rq = new SortedDictionary<string, string>
+            var rq = new AuthRefreshTokenRQ
             {
-                ["appId"] = App.Configuration.AppId.ToString(),
-                ["appKey"] = App.Configuration.AppKey,
-                ["refreshToken"] = refreshToken
+                AppId = App.Configuration.AppId,
+                AppKey = App.Configuration.AppKey,
+                RefreshToken = refreshToken
             };
 
-            // With an extra '&' at the end
-            var query = rq.JoinAsQuery().TrimEnd('&');
-
             // Siganature
-            var sign = Convert.ToHexString(CryptographyUtils.HMACSHA256(query, App.Configuration.AppSecret));
-            rq["sign"] = sign;
+            rq.Sign = rq.SignWith(App.Configuration.AppSecret);
+
+            using var jsonContent = JsonContent.Create(rq, ModelJsonSerializerContext.Default.AuthRefreshTokenRQ);
 
             var api = $"{App.Configuration.ApiUrl}/Auth/OAuthRefreshToken";
-            var response = await _clientFactory.CreateClient().PostAsync(api, new FormUrlEncodedContent(rq), cancellationToken);
+
+            using var response = await _clientFactory.CreateClient().PostAsync(api, jsonContent, cancellationToken);
 
             response.EnsureSuccessStatusCode();
 
@@ -250,11 +246,11 @@ namespace com.etsoo.ServiceApp.Services
             }
 
             var client = _clientFactory.CreateClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenData.AccessToken);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(tokenData.TokenType, tokenData.AccessToken);
 
             var api = $"{App.Configuration.ApiUrl}/Auth/OAuthUserInfo";
 
-            var response = await client.GetAsync(api, cancellationToken);
+            using var response = await client.GetAsync(api, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             return await response.Content.ReadFromJsonAsync(ModelJsonSerializerContext.Default.CurrentUser, cancellationToken);
