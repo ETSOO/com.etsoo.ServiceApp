@@ -105,12 +105,7 @@ namespace com.etsoo.ServiceApp.Services
         public string GetServerAuthUrl(string action, string state, bool tokenResponse, string scope, bool offline = false, string? loginHint = null)
         {
             var responseType = tokenResponse ? AuthRequest.TokenResponseType : AuthRequest.CodeResponseType;
-            var url = GetAuthUrl($"{App.Configuration.ServerRedirectUrl}/{action}", responseType, scope, state, loginHint);
-            if (offline)
-            {
-                url += "&access_type=offline";
-            }
-            return url;
+            return GetAuthUrl($"{App.Configuration.ServerRedirectUrl}/{action}", responseType, scope, state, loginHint, offline ? AuthRequest.OfflineAccessType : null);
         }
 
         /// <summary>
@@ -124,7 +119,7 @@ namespace com.etsoo.ServiceApp.Services
         /// <returns>URL</returns>
         public string GetScriptAuthUrl(string action, string state, string scope, string? loginHint = null)
         {
-            return GetAuthUrl($"{App.Configuration.ScriptRedirectUrl}/{action}", AuthRequest.TokenResponseType, scope, state, loginHint);
+            return GetAuthUrl($"{App.Configuration.ScriptRedirectUrl}/{action}", AuthRequest.TokenResponseType, scope, state, loginHint, AuthRequest.OfflineAccessType);
         }
 
         /// <summary>
@@ -136,9 +131,10 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="scope">A space-delimited list of scopes that identify the resources that your application could access on the user's behalf</param>
         /// <param name="state">Specifies any string value that your application uses to maintain state between your authorization request and the authorization server's response</param>
         /// <param name="loginHint">Set the parameter value to an email address or sub identifier, which is equivalent to the user's identifer ID</param>
+        /// <param name="accessType">Access type, set to 'offline' will return the refresh token</param>
         /// <returns>URL</returns>
         /// <exception cref="ArgumentNullException">Parameter 'redirectUrl' is required</exception>
-        public string GetAuthUrl(string? redirectUrl, string responseType, string scope, string state, string? loginHint = null)
+        public string GetAuthUrl(string? redirectUrl, string responseType, string scope, string state, string? loginHint = null, string? accessType = null)
         {
             if (string.IsNullOrEmpty(redirectUrl) || !Uri.TryCreate(redirectUrl, UriKind.Absolute, out var uri))
             {
@@ -149,6 +145,7 @@ namespace com.etsoo.ServiceApp.Services
 
             var rq = new AuthRequest
             {
+                AccessType = accessType,
                 AppId = App.Configuration.AppId,
                 AppKey = App.Configuration.AppKey,
                 LoginHint = loginHint,
