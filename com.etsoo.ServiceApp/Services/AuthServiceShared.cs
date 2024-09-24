@@ -139,6 +139,8 @@ namespace com.etsoo.ServiceApp.Services
                 throw new ArgumentNullException(nameof(redirectUrl));
             }
 
+            // Encrypt the state, as EncriptData will add a timestamp, make the state is dynamic and no way to guess
+            // 加密状态，EncriptData会添加时间戳，使状态是动态的，没有办法猜测
             var encryptedState = App.EncriptData(state, "", EncryptionValidSeconds);
 
             var rq = new AuthRequest
