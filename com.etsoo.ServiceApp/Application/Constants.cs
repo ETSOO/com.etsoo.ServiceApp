@@ -17,14 +17,9 @@
         public const string RefreshTokenHeaderName = "Smarterp-Refresh-Token";
 
         /// <summary>
-        /// Token item name
+        /// Service token item name
         /// </summary>
-        public const string TokenName = "Token";
-
-        /// <summary>
-        /// Service device item name
-        /// </summary>
-        public const string ServiceDeviceName = "ServiceDeviceId";
+        public const string ServiceTokenName = "ServiceToken";
 
         /// <summary>
         /// Service passphrase
@@ -32,9 +27,9 @@
         public const string ServicePassphrase = "ServicePassphrase";
 
         /// <summary>
-        /// Token expiry seconds item name
+        /// Service refresh token item name
         /// </summary>
-        public const string SecondsName = "Seconds";
+        public const string ServiceRefreshTokenName = "ServiceRefreshToken";
 
         /// <summary>
         /// Current user id parameter name

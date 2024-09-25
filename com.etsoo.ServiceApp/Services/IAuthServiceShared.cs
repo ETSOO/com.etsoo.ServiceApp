@@ -38,13 +38,23 @@ namespace com.etsoo.ServiceApp.Services
         ValueTask<AppTokenData?> CreateTokenAsync(string action, string code, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Refresh the access token with refresh token
-        /// 用刷新令牌获取访问令牌
+        /// Refresh the token
+        /// 刷新访问令牌
         /// </summary>
         /// <param name="refreshToken">Refresh token</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
         Task<AppTokenData?> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Refresh token for the service and core system
+        /// 为服务和核心系统刷新令牌
+        /// </summary>
+        /// <param name="refreshToken">Refresh token</param>
+        /// <param name="serviceRefreshToken">Service refresh token</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result</returns>
+        Task<IActionResult> RefreshTokenAsync(string refreshToken, string serviceRefreshToken, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Get user info
