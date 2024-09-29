@@ -47,14 +47,31 @@ namespace com.etsoo.ServiceApp.Services
         Task<AppTokenData?> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Refresh token for the service and core system
-        /// 为服务和核心系统刷新令牌
+        /// Refresh token, only for the service application
+        /// 刷新令牌，仅用于服务应用
         /// </summary>
-        /// <param name="refreshToken">Refresh token</param>
-        /// <param name="serviceRefreshToken">Service refresh token</param>
+        /// <param name="data">Data</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        Task<IActionResult> RefreshTokenAsync(string refreshToken, string serviceRefreshToken, CancellationToken cancellationToken = default);
+        ValueTask<(IActionResult result, string? newRefreshToken)> RefreshTokenAsync(RefreshTokenData data, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Refresh token for core system
+        /// 核心系统刷新令牌
+        /// </summary>
+        /// <param name="data">Data</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result</returns>
+        ValueTask<(IActionResult result, string? newRefreshToken)> RefreshTokenCoreAsync(RefreshTokenData data, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Refresh the token with result
+        /// 刷新访问令牌为结果
+        /// </summary>
+        /// <param name="refreshToken">Refresh token</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result & new refresh token</returns>
+        Task<(IActionResult result, string? newRefreshToken)> RefreshTokenResultAsync(string refreshToken, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Get user info

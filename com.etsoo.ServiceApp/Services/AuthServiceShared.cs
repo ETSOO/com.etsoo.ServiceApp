@@ -234,6 +234,50 @@ namespace com.etsoo.ServiceApp.Services
         }
 
         /// <summary>
+        /// Refresh the token with result
+        /// 刷新访问令牌为结果
+        /// </summary>
+        /// <param name="refreshToken">Refresh token</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result & new refresh token</returns>
+        public async Task<(IActionResult result, string? newRefreshToken)> RefreshTokenResultAsync(string refreshToken, CancellationToken cancellationToken = default)
+        {
+            var rq = new AuthRefreshTokenRQ
+            {
+                AppId = App.Configuration.AppId,
+                AppKey = App.Configuration.AppKey,
+                RefreshToken = refreshToken
+            };
+
+            // Siganature
+            rq.Sign = rq.SignWith(App.Configuration.AppSecret);
+
+            using var jsonContent = JsonContent.Create(rq, ModelJsonSerializerContext.Default.AuthRefreshTokenRQ);
+
+            var api = $"{App.Configuration.ApiUrl}/Auth/OAuthRefreshTokenResult";
+
+            using var response = await _clientFactory.CreateClient().PostAsync(api, jsonContent, cancellationToken);
+
+            response.EnsureSuccessStatusCode();
+
+            // Get the refresh token header
+            var newRefreshToken = response.Headers.GetValues(Constants.RefreshTokenHeaderName).FirstOrDefault();
+
+            if (string.IsNullOrEmpty(newRefreshToken))
+            {
+                return (ApplicationErrors.NoDataReturned.AsResult("RefreshToken"), null);
+            }
+
+            var result = await response.Content.ReadFromJsonAsync(CommonJsonSerializerContext.Default.IActionResult, cancellationToken);
+            if (result == null)
+            {
+                return (ApplicationErrors.NoDataReturned.AsResult("Result"), null);
+            }
+
+            return (result, newRefreshToken);
+        }
+
+        /// <summary>
         /// Get user info
         /// 获取用户信息
         /// </summary>
@@ -510,97 +554,6 @@ namespace com.etsoo.ServiceApp.Services
         }
 
         /// <summary>
-        /// Enrich user data
-        /// 扩展用户数据
-        /// </summary>
-        /// <param name="user">Core system user data</param>
-        /// <param name="tokenData">Core system token data</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Enriched user and refresh token</returns>
-        protected virtual async ValueTask<(IMinUserToken user, string refreshToken)> EnrichUserAsync(ICurrentUser user, AppTokenData tokenData, CancellationToken cancellationToken = default)
-        {
-            var refreshToken = await EnrichRefreshTokenAsync(user, tokenData, cancellationToken);
-            return (user, refreshToken);
-        }
-
-        /// <summary>
-        /// Enrich refresh token
-        /// 扩展刷新令牌
-        /// </summary>
-        /// <param name="user">Current user</param>
-        /// <param name="tokenData">Core system token data</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Refresh token</returns>
-        /// <exception cref="Exception"></exception>
-        protected virtual async ValueTask<string> EnrichRefreshTokenAsync(ICurrentUser user, AppTokenData tokenData, CancellationToken cancellationToken = default)
-        {
-            if (string.IsNullOrEmpty(tokenData.RefreshToken))
-            {
-                Logger.LogWarning("Refresh token for {user} is required", user.Id);
-                throw new Exception("Refresh token is required");
-            }
-            await Task.CompletedTask;
-            return tokenData.RefreshToken;
-        }
-
-        /// <summary>
-        /// Validate service refresh token
-        /// 验证服务刷新令牌
-        /// </summary>
-        /// <param name="user">Current user</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Result</returns>
-        protected virtual async ValueTask<bool> ValidateServiceRefreshTokenAsync(ICurrentUser user, CancellationToken cancellationToken = default)
-        {
-            await Task.CompletedTask;
-            return true;
-        }
-
-        /// <summary>
-        /// Create the authorization result
-        /// 创建授权结果
-        /// </summary>
-        /// <param name="user">Core system user data</param>
-        /// <param name="tokenData">Core system token data</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Action result</returns>
-        protected virtual async Task<IActionResult> CreateAuthResultAsync(ICurrentUser user, AppTokenData tokenData, CancellationToken cancellationToken = default)
-        {
-            var result = ActionResult.Success;
-
-            // Choose the minimum token expiration seconds
-            var seconds = Math.Min(tokenData.ExpiresIn, _authService.AccessTokenMinutes * 60);
-
-            // Core system data
-            // Same with Core System's CompleteLoginAsync
-            result.Data["Name"] = user.Name;
-            result.Data["Avatar"] = user.Avatar;
-            result.Data["Organization"] = user.OrganizationInt;
-            result.Data["IsChannel"] = !string.IsNullOrEmpty(user.ChannelOrganization);
-            result.Data["IsParent"] = !string.IsNullOrEmpty(user.ParentOrganization);
-            result.Data["Role"] = user.RoleValue;
-            result.Data["Token"] = tokenData.AccessToken;
-            result.Data["Seconds"] = seconds;
-            result.Data["RefreshToken"] = tokenData.RefreshToken;
-
-            // Service passphrase
-            var passphrase = $"{user.Uid}-{App.Configuration.AppId}";
-
-            // Service / current application data
-            var servicePassphrase = CryptographyUtils.CreateRandString(RandStringKind.All, 32).ToString();
-            result.Data[Constants.ServicePassphrase] = EncryptWeb(servicePassphrase, passphrase);
-            result.Data["Uid"] = user.Uid;
-            result.Data["OrganizationName"] = user.OrganizationName;
-
-            // Enrich user data
-            var (localUser, serviceRefreshToken) = await EnrichUserAsync(user, tokenData, cancellationToken);
-            result.Data[Constants.ServiceTokenName] = _authService.CreateAccessToken(localUser);
-            result.Data[Constants.ServiceRefreshTokenName] = serviceRefreshToken;
-
-            return result;
-        }
-
-        /// <summary>
         /// Log in from OAuth2 client and authorized
         /// 从OAuth2客户端登录并授权
         /// </summary>
@@ -631,13 +584,25 @@ namespace com.etsoo.ServiceApp.Services
                 }
                 else
                 {
-                    // Create the result
-                    result = CreateAuthResultAsync(user, tokenData, cancellationToken).Result;
-                    var json = JsonSerializer.Serialize(result, CommonJsonSerializerContext.Default.ActionResult);
+                    // Create the results
+                    var (coreResult, coreRefreshToken) = CreateCoreTokenResult(user, tokenData);
+                    if (coreResult.Ok && !string.IsNullOrEmpty(coreRefreshToken))
+                    {
+                        coreResult.Data[Constants.RefreshTokenName] = coreRefreshToken;
+                    }
+
+                    var (serviceResult, _, serviceRefreshToken) = await EnrichUserAsync(user, cancellationToken);
+                    if (serviceResult.Ok && !string.IsNullOrEmpty(serviceRefreshToken))
+                    {
+                        serviceResult.Data[Constants.RefreshTokenName] = serviceRefreshToken;
+                    }
+
+                    var core = JsonSerializer.Serialize(coreResult, CommonJsonSerializerContext.Default.ActionResult);
+                    var service = JsonSerializer.Serialize(serviceResult, CommonJsonSerializerContext.Default.ActionResult);
 
                     // Redirect to the success URL
                     var successUrl = App.Configuration.AuthSuccessUrl;
-                    context.Response.Redirect($"{successUrl}?result={HttpUtility.UrlEncode(json)}", true);
+                    context.Response.Redirect($"{successUrl}?core={HttpUtility.UrlEncode(core)}&service={HttpUtility.UrlEncode(service)}", true);
                     return;
                 }
             }
@@ -648,36 +613,160 @@ namespace com.etsoo.ServiceApp.Services
             context.Response.Redirect($"{url}?error={HttpUtility.UrlEncode(jsonResult)}", true);
         }
 
+        private (ActionResult result, string? RefreshToken) CreateCoreTokenResult(CurrentUser user, AppTokenData tokenData)
+        {
+            var publicData = new PublicUserData
+            {
+                Name = user.Name,
+                Avatar = user.Avatar,
+                Organization = user.OrganizationInt > 0 ? user.OrganizationInt : null,
+                IsChannel = !string.IsNullOrEmpty(user.ChannelOrganization),
+                IsParent = !string.IsNullOrEmpty(user.ParentOrganization),
+                Role = user.RoleValue,
+                TokenScheme = tokenData.TokenType,
+                Token = tokenData.AccessToken,
+                Seconds = tokenData.ExpiresIn
+            };
+
+            var result = ActionResult.Success;
+            publicData.SaveTo(result);
+
+            return (result, tokenData.RefreshToken);
+        }
+
         /// <summary>
-        /// Refresh token for the service and core system
-        /// 为服务和核心系统刷新令牌
+        /// Refresh token, only for the service application
+        /// 刷新令牌，仅用于服务应用
         /// </summary>
-        /// <param name="refreshToken">Refresh token</param>
-        /// <param name="serviceRefreshToken">Service refresh token</param>
+        /// <param name="data">Data</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async Task<IActionResult> RefreshTokenAsync(string refreshToken, string serviceRefreshToken, CancellationToken cancellationToken = default)
+        public async ValueTask<(IActionResult result, string? newRefreshToken)> RefreshTokenAsync(RefreshTokenData data, CancellationToken cancellationToken = default)
         {
-            // Check current user
-            if (User == null)
+            // Check device
+            if (!this.CheckDevice(data.UserAgent, data.DeviceId, out var checkResult, out var cd))
             {
-                return ApplicationErrors.AccessDenied.AsResult();
+                return (checkResult, null);
             }
 
-            // Validate the service refresh token
-            if (!await ValidateServiceRefreshTokenAsync(User, cancellationToken))
+            var deviceCore = cd.Value.DeviceCore;
+
+            var token = DecryptDeviceData(data.Token, deviceCore);
+            if (string.IsNullOrEmpty(token))
             {
-                return ApplicationErrors.TokenExpired.AsResult("service");
+                return (ApplicationErrors.NoValidData.AsResult("Token"), null);
+            }
+
+            var deviceName = cd.Value.Parser.ToShortName();
+
+            return await EnrichRefreshTokenAsync(token, deviceName, data.DeviceId, cancellationToken);
+        }
+
+        /// <summary>
+        /// Enrich refresh token for service application, default implementation is to refresh the token from the core system
+        /// 为服务应用增强刷新令牌，默认实现是从核心系统刷新令牌
+        /// </summary>
+        /// <param name="token">Refresh token</param>
+        /// <param name="deviceName">Device name</param>
+        /// <param name="clientId">Client id</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result & new refresh token</returns>
+        protected virtual async ValueTask<(IActionResult result, string? newRefreshToken)> EnrichRefreshTokenAsync(string token, string deviceName, string clientId, CancellationToken cancellationToken)
+        {
+            var tokenData = await RefreshTokenAsync(token, cancellationToken);
+            if (tokenData == null)
+            {
+                return (ApplicationErrors.TokenExpired.AsResult(), null);
+            }
+
+            var user = await GetUserInfoAsync(tokenData, cancellationToken);
+            if (user == null)
+            {
+                return (ApplicationErrors.NoDataReturned.AsResult("User"), null);
+            }
+
+            var refreshToken = tokenData.RefreshToken;
+            if (string.IsNullOrEmpty(refreshToken))
+            {
+                return (ApplicationErrors.NoDataReturned.AsResult("RefreshToken"), null);
+            }
+
+            var (result, _, newRefreshToken) = await EnrichUserAsync(user, cancellationToken);
+
+            return (result, newRefreshToken ?? refreshToken);
+        }
+
+        /// <summary>
+        /// Enrich user data for service application, default implementation is to use the core system user
+        /// 为服务应用增强用户数据，默认实现是使用核心系统用户
+        /// </summary>
+        /// <param name="user">Core system user</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result, enriched user, and new refresh token</returns>
+        protected virtual async ValueTask<(IActionResult result, IMinUserToken user, string? newRefreshToken)> EnrichUserAsync(ICurrentUser user, CancellationToken cancellationToken)
+        {
+            var accessToken = _authService.CreateAccessToken(user);
+            var minutes = _authService.AccessTokenMinutes * 60;
+
+            // Service passphrase
+            var passphraseKey = $"{user.Uid}-{App.Configuration.AppId}";
+            var passphrase = CryptographyUtils.CreateRandString(RandStringKind.All, 32).ToString();
+
+            var data = new PublicServiceUserData
+            {
+                Name = user.Name,
+                Avatar = user.Avatar,
+                Organization = user.OrganizationInt > 0 ? user.OrganizationInt : null,
+                IsChannel = !string.IsNullOrEmpty(user.ChannelOrganization),
+                IsParent = !string.IsNullOrEmpty(user.ParentOrganization),
+                Role = user.RoleValue,
+                TokenScheme = "Bearer",
+                Token = accessToken,
+                Seconds = 60 * minutes,
+                Passphrase = EncryptWeb(passphrase, passphraseKey),
+                Uid = user.Uid,
+                OrganizationName = user.OrganizationName
+            };
+
+            var result = ActionResult.Success;
+            data.SaveTo(result);
+
+            await Task.CompletedTask;
+
+            return (result, user, null);
+        }
+
+        /// <summary>
+        /// Refresh token for core system
+        /// 核心系统刷新令牌
+        /// </summary>
+        /// <param name="data">Data</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result</returns>
+        public async ValueTask<(IActionResult result, string? newRefreshToken)> RefreshTokenCoreAsync(RefreshTokenData data, CancellationToken cancellationToken = default)
+        {
+            // Check device
+            if (!this.CheckDevice(data.UserAgent, data.DeviceId, out var checkResult, out var cd))
+            {
+                return (checkResult, null);
+            }
+
+            var deviceCore = cd.Value.DeviceCore;
+
+            var token = DecryptDeviceData(data.Token, deviceCore);
+            if (string.IsNullOrEmpty(token))
+            {
+                return (ApplicationErrors.NoValidData.AsResult("Token"), null);
             }
 
             // Core system refresh token
-            var tokenData = await RefreshTokenAsync(refreshToken, cancellationToken);
+            var tokenData = await RefreshTokenAsync(token, cancellationToken);
             if (tokenData == null)
             {
-                return ApplicationErrors.TokenExpired.AsResult();
+                return (ApplicationErrors.TokenExpired.AsResult(), null);
             }
 
-            return await CreateAuthResultAsync(User, tokenData, cancellationToken);
+            return await RefreshTokenResultAsync(token, cancellationToken);
         }
     }
 }
