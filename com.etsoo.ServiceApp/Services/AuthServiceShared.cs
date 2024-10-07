@@ -585,24 +585,35 @@ namespace com.etsoo.ServiceApp.Services
                 else
                 {
                     // Create the results
+                    /*
                     var (coreResult, coreRefreshToken) = CreateCoreTokenResult(user, tokenData);
                     if (coreResult.Ok && !string.IsNullOrEmpty(coreRefreshToken))
                     {
                         coreResult.Data[Constants.RefreshTokenName] = coreRefreshToken;
                     }
+                    */
+                    var coreData = new ApiTokenData
+                    {
+                        AccessToken = tokenData.AccessToken,
+                        ExpiresIn = tokenData.ExpiresIn,
+                        TokenType = tokenData.TokenType,
+                        RefreshToken = tokenData.RefreshToken
+                    };
 
-                    var (serviceResult, _, serviceRefreshToken) = await EnrichUserAsync(user, cancellationToken);
-                    if (serviceResult.Ok && !string.IsNullOrEmpty(serviceRefreshToken))
+                    var (data, _, serviceRefreshToken) = await EnrichUserAsync(user, cancellationToken);
+                    var serviceResult = ActionResult.Success;
+                    data.SaveTo(serviceResult);
+                    if (!string.IsNullOrEmpty(serviceRefreshToken))
                     {
                         serviceResult.Data[Constants.RefreshTokenName] = serviceRefreshToken;
                     }
 
-                    var core = JsonSerializer.Serialize(coreResult, CommonJsonSerializerContext.Default.ActionResult);
+                    var core = JsonSerializer.Serialize(coreData, ModelJsonSerializerContext.Default.ApiTokenData);
                     var service = JsonSerializer.Serialize(serviceResult, CommonJsonSerializerContext.Default.ActionResult);
 
                     // Redirect to the success URL
                     var successUrl = App.Configuration.AuthSuccessUrl;
-                    context.Response.Redirect($"{successUrl}?core={HttpUtility.UrlEncode(core)}&service={HttpUtility.UrlEncode(service)}", true);
+                    context.Response.Redirect($"{successUrl}?result={HttpUtility.UrlEncode(service)}&core={HttpUtility.UrlEncode(core)}", true);
                     return;
                 }
             }
@@ -657,9 +668,13 @@ namespace com.etsoo.ServiceApp.Services
                 return (ApplicationErrors.NoValidData.AsResult("Token"), null);
             }
 
-            var deviceName = cd.Value.Parser.ToShortName();
+            var (result, pd, refreshToken) = await EnrichRefreshTokenAsync(token, cancellationToken);
+            if (result.Ok && pd != null)
+            {
+                pd.SaveTo(result);
+            }
 
-            return await EnrichRefreshTokenAsync(token, deviceName, data.DeviceId, cancellationToken);
+            return (result, refreshToken);
         }
 
         /// <summary>
@@ -667,33 +682,31 @@ namespace com.etsoo.ServiceApp.Services
         /// 为服务应用增强刷新令牌，默认实现是从核心系统刷新令牌
         /// </summary>
         /// <param name="token">Refresh token</param>
-        /// <param name="deviceName">Device name</param>
-        /// <param name="clientId">Client id</param>
         /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Result & new refresh token</returns>
-        protected virtual async ValueTask<(IActionResult result, string? newRefreshToken)> EnrichRefreshTokenAsync(string token, string deviceName, string clientId, CancellationToken cancellationToken)
+        /// <returns>Result & public data & new refresh token</returns>
+        protected virtual async ValueTask<(IActionResult result, PublicServiceUserData? data, string? newRefreshToken)> EnrichRefreshTokenAsync(string token, CancellationToken cancellationToken)
         {
             var tokenData = await RefreshTokenAsync(token, cancellationToken);
             if (tokenData == null)
             {
-                return (ApplicationErrors.TokenExpired.AsResult(), null);
+                return (ApplicationErrors.TokenExpired.AsResult(), null, null);
             }
 
             var user = await GetUserInfoAsync(tokenData, cancellationToken);
             if (user == null)
             {
-                return (ApplicationErrors.NoDataReturned.AsResult("User"), null);
+                return (ApplicationErrors.NoDataReturned.AsResult("User"), null, null);
             }
 
             var refreshToken = tokenData.RefreshToken;
             if (string.IsNullOrEmpty(refreshToken))
             {
-                return (ApplicationErrors.NoDataReturned.AsResult("RefreshToken"), null);
+                return (ApplicationErrors.NoDataReturned.AsResult("RefreshToken"), null, null);
             }
 
-            var (result, _, newRefreshToken) = await EnrichUserAsync(user, cancellationToken);
+            var (data, _, newRefreshToken) = await EnrichUserAsync(user, cancellationToken);
 
-            return (result, newRefreshToken ?? refreshToken);
+            return (ActionResult.Success, data, newRefreshToken ?? refreshToken);
         }
 
         /// <summary>
@@ -702,8 +715,8 @@ namespace com.etsoo.ServiceApp.Services
         /// </summary>
         /// <param name="user">Core system user</param>
         /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Result, enriched user, and new refresh token</returns>
-        protected virtual async ValueTask<(IActionResult result, IMinUserToken user, string? newRefreshToken)> EnrichUserAsync(ICurrentUser user, CancellationToken cancellationToken)
+        /// <returns>Public data, enriched user, and new refresh token</returns>
+        protected virtual async ValueTask<(PublicServiceUserData data, IMinUserToken user, string? newRefreshToken)> EnrichUserAsync(ICurrentUser user, CancellationToken cancellationToken)
         {
             var accessToken = _authService.CreateAccessToken(user);
             var minutes = _authService.AccessTokenMinutes * 60;
@@ -728,12 +741,9 @@ namespace com.etsoo.ServiceApp.Services
                 OrganizationName = user.OrganizationName
             };
 
-            var result = ActionResult.Success;
-            data.SaveTo(result);
-
             await Task.CompletedTask;
 
-            return (result, user, null);
+            return (data, user, null);
         }
 
         /// <summary>
@@ -767,6 +777,57 @@ namespace com.etsoo.ServiceApp.Services
             }
 
             return await RefreshTokenResultAsync(token, cancellationToken);
+        }
+
+        /// <summary>
+        /// Refresh API token
+        /// 刷新API令牌
+        /// </summary>
+        /// <param name="token">Refresh token</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result</returns>
+        public async ValueTask<ApiTokenData?> ApiRefreshTokenAsync(string token, CancellationToken cancellationToken = default)
+        {
+            var (result, pd, refreshToken) = await EnrichRefreshTokenAsync(token, cancellationToken);
+            if (result.Ok && pd != null && !string.IsNullOrEmpty(refreshToken))
+            {
+                return new ApiTokenData
+                {
+                    AccessToken = pd.Token,
+                    ExpiresIn = pd.Seconds,
+                    TokenType = pd.TokenScheme,
+                    RefreshToken = refreshToken
+                };
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Exchange API token from core system
+        /// 从核心系统交换API令牌
+        /// </summary>
+        /// <param name="token">Refresh token</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result</returns>
+        public async ValueTask<ApiTokenData?> ExchangeTokenAsync(string token, CancellationToken cancellationToken = default)
+        {
+            // Core system refresh token
+            var tokenData = await RefreshTokenAsync(token, cancellationToken);
+            if (tokenData == null || tokenData.RefreshToken == null)
+            {
+                return null;
+            }
+
+            return new ApiTokenData
+            {
+                AccessToken = tokenData.AccessToken,
+                ExpiresIn = tokenData.ExpiresIn,
+                TokenType = tokenData.TokenType,
+                RefreshToken = tokenData.RefreshToken
+            };
         }
     }
 }

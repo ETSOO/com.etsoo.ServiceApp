@@ -120,5 +120,23 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Action result & current user & login data</returns>
         ValueTask AuthLogInAsync(HttpContext context, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Refresh API token
+        /// 刷新API令牌
+        /// </summary>
+        /// <param name="token">Refresh token</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result</returns>
+        ValueTask<ApiTokenData?> ApiRefreshTokenAsync(string token, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Exchange API token from core system
+        /// 从核心系统交换API令牌
+        /// </summary>
+        /// <param name="token">Refresh token</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result</returns>
+        ValueTask<ApiTokenData?> ExchangeTokenAsync(string token, CancellationToken cancellationToken = default);
     }
 }
