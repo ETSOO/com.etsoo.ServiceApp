@@ -56,15 +56,6 @@ namespace com.etsoo.ServiceApp.Services
         ValueTask<(IActionResult result, string? newRefreshToken)> RefreshTokenAsync(RefreshTokenData data, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Refresh token for core system
-        /// 核心系统刷新令牌
-        /// </summary>
-        /// <param name="data">Data</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Result</returns>
-        ValueTask<(IActionResult result, string? newRefreshToken)> RefreshTokenCoreAsync(RefreshTokenData data, CancellationToken cancellationToken = default);
-
-        /// <summary>
         /// Refresh the token with result
         /// 刷新访问令牌为结果
         /// </summary>
