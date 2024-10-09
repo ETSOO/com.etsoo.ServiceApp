@@ -635,12 +635,13 @@ namespace com.etsoo.ServiceApp.Services
                         }
 
                         // Service passphrase
+                        // Passphrase is encrypted by front-end information for random string while the device id is encrypted by the parser data
                         var randomChars = CryptographyUtils.CreateRandString(RandStringKind.All, 32).ToString();
                         var passphraseKey = $"{user.Uid}-{App.Configuration.AppId}";
                         var passphrase = EncryptWeb(randomChars, passphraseKey);
                         var deviceId = Encrypt(randomChars, parser.ToShortName());
                         serviceResult.Data["Passphrase"] = passphrase;
-                        serviceResult.Data["DeviceId"] = deviceId;
+                        serviceResult.Data["ClientDeviceId"] = deviceId;
 
                         var service = JsonSerializer.Serialize(serviceResult, CommonJsonSerializerContext.Default.ActionResult);
 
