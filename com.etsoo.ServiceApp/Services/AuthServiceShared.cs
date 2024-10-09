@@ -609,20 +609,29 @@ namespace com.etsoo.ServiceApp.Services
                     else
                     {
                         // Create the results
-                        var coreData = new ApiTokenData
-                        {
-                            AccessToken = tokenData.AccessToken,
-                            ExpiresIn = tokenData.ExpiresIn,
-                            TokenType = tokenData.TokenType,
-                            RefreshToken = tokenData.RefreshToken
-                        };
-
                         var (data, _, serviceRefreshToken) = await EnrichUserAsync(user, cancellationToken);
                         var serviceResult = ActionResult.Success;
                         data.SaveTo(serviceResult);
+
+                        string core;
                         if (!string.IsNullOrEmpty(serviceRefreshToken))
                         {
                             serviceResult.Data[Constants.RefreshTokenName] = serviceRefreshToken;
+
+                            var coreData = new ApiTokenData
+                            {
+                                AccessToken = tokenData.AccessToken,
+                                ExpiresIn = tokenData.ExpiresIn,
+                                TokenType = tokenData.TokenType,
+                                RefreshToken = tokenData.RefreshToken
+                            };
+
+                            core = JsonSerializer.Serialize(coreData, ModelJsonSerializerContext.Default.ApiTokenData);
+                        }
+                        else
+                        {
+                            // Share the same data, no necessary to return duplicate data
+                            core = string.Empty;
                         }
 
                         // Service passphrase
@@ -633,7 +642,6 @@ namespace com.etsoo.ServiceApp.Services
                         serviceResult.Data["Passphrase"] = passphrase;
                         serviceResult.Data["DeviceId"] = deviceId;
 
-                        var core = JsonSerializer.Serialize(coreData, ModelJsonSerializerContext.Default.ApiTokenData);
                         var service = JsonSerializer.Serialize(serviceResult, CommonJsonSerializerContext.Default.ActionResult);
 
                         // Redirect to the success URL
@@ -750,7 +758,6 @@ namespace com.etsoo.ServiceApp.Services
         protected virtual async ValueTask<(PublicServiceUserData data, IMinUserToken user, string? newRefreshToken)> EnrichUserAsync(ICurrentUser user, CancellationToken cancellationToken)
         {
             var accessToken = _authService.CreateAccessToken(user);
-            var minutes = _authService.AccessTokenMinutes * 60;
 
             var data = new PublicServiceUserData
             {
@@ -762,7 +769,7 @@ namespace com.etsoo.ServiceApp.Services
                 Role = user.RoleValue,
                 TokenScheme = "Bearer",
                 Token = accessToken,
-                Seconds = 60 * minutes,
+                Seconds = _authService.AccessTokenMinutes * 60,
                 Uid = user.Uid,
                 OrganizationName = user.OrganizationName
             };
