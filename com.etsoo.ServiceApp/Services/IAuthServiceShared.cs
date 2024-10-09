@@ -88,7 +88,6 @@ namespace com.etsoo.ServiceApp.Services
         /// Get log in URL result
         /// 获取登录URL结果
         /// </summary>
-        /// <param name="client">Auth client</param>
         /// <param name="userAgent">User agent</param>
         /// <param name="deviceId">Region (like CN) & Device id</param>
         /// <returns>Result</returns>

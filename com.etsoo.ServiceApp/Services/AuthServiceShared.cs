@@ -481,21 +481,43 @@ namespace com.etsoo.ServiceApp.Services
         /// Get log in URL result
         /// 获取登录URL结果
         /// </summary>
-        /// <param name="client">Auth client</param>
         /// <param name="userAgent">User agent</param>
         /// <param name="deviceId">Region (like CN) & Device id</param>
         /// <returns>Result</returns>
         public IResult GetLogInUrlResult(string? userAgent, string deviceId)
         {
-            if (!this.CheckDevice(userAgent, deviceId[2..], out var result, out _))
+            if (string.IsNullOrEmpty(userAgent))
+            {
+                return Results.BadRequest();
+            }
+
+            var region = deviceId[..2];
+            if (deviceId.Length < 10)
+            {
+                var parser = new UAParser(userAgent);
+                if (!parser.Valid || parser.IsBot)
+                {
+                    return Results.BadRequest();
+                }
+
+                deviceId = region + CreateLoginState(parser.ToShortName());
+            }
+            else if (!this.CheckDevice(userAgent, deviceId[2..], out var result, out var d))
             {
                 return Results.BadRequest(result);
             }
             else
             {
-                var url = GetServerAuthUrl(AuthExtentions.LogInAction, deviceId, true, App.Configuration.Scopes, true);
-                return Results.Content(url, "text/plain");
+                deviceId = region + CreateLoginState(d.Value.Parser.ToShortName());
             }
+
+            var url = GetServerAuthUrl(AuthExtentions.LogInAction, deviceId, true, App.Configuration.Scopes, true);
+            return Results.Content(url, "text/plain");
+        }
+
+        private string CreateLoginState(string device)
+        {
+            return App.HashPassword(App.Configuration.AppId + device);
         }
 
         /// <summary>
@@ -507,7 +529,7 @@ namespace com.etsoo.ServiceApp.Services
         /// <returns>Action result & current user & Token data & login data</returns>
         public async ValueTask<(IActionResult result, CurrentUser? user, AppTokenData? tokenData, AuthLoginValidateData? data)> LogInAsync(HttpContext context, CancellationToken cancellationToken = default)
         {
-            (string DeviceCore, UAParser Parser)? parser = null;
+            var parser = new UAParser(context.UserAgent());
             string? region = null;
             string? deviceId = null;
             CurrentUser? user = null;
@@ -523,7 +545,7 @@ namespace com.etsoo.ServiceApp.Services
                 // The device id is the rest of the string
                 deviceId = s[2..];
 
-                return this.CheckDevice(context.UserAgent(), deviceId.Replace(" ", "+"), out _, out parser);
+                return deviceId.Equals(CreateLoginState(parser.ToShortName()));
             }, AuthExtentions.LogInAction, cancellationToken);
 
             if (result.Ok && tokenData != null)
@@ -540,13 +562,13 @@ namespace com.etsoo.ServiceApp.Services
             }
 
             AuthLoginValidateData? data = null;
-            if (parser != null && region != null && deviceId != null)
+            if (region != null && deviceId != null)
             {
                 data = new AuthLoginValidateData
                 {
                     DeviceId = deviceId,
                     Region = region,
-                    Parser = parser.Value.Parser
+                    Parser = parser
                 };
             }
 
