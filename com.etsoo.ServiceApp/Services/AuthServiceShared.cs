@@ -616,8 +616,6 @@ namespace com.etsoo.ServiceApp.Services
                         string core;
                         if (!string.IsNullOrEmpty(serviceRefreshToken))
                         {
-                            serviceResult.Data[Constants.RefreshTokenName] = serviceRefreshToken;
-
                             var coreData = new ApiTokenData
                             {
                                 AccessToken = tokenData.AccessToken,
@@ -631,8 +629,12 @@ namespace com.etsoo.ServiceApp.Services
                         else
                         {
                             // Share the same data, no necessary to return duplicate data
+                            serviceRefreshToken = tokenData.RefreshToken;
                             core = string.Empty;
                         }
+
+                        // Return the refresh token
+                        serviceResult.Data[Constants.RefreshTokenName] = serviceRefreshToken;
 
                         // Service passphrase
                         // Passphrase is encrypted by front-end information for random string while the device id is encrypted by the parser data
