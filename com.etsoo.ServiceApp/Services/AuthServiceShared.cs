@@ -634,7 +634,7 @@ namespace com.etsoo.ServiceApp.Services
                         }
 
                         // Return the refresh token
-                        serviceResult.Data[Constants.RefreshTokenName] = serviceRefreshToken;
+                        serviceResult.Data[ServiceConstants.RefreshTokenName] = serviceRefreshToken;
 
                         // Service passphrase
                         // Passphrase is encrypted by front-end information for random string while the device id is encrypted by the parser data
