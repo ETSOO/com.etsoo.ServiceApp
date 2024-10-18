@@ -115,10 +115,10 @@ namespace com.etsoo.ServiceApp.Services
         /// Refresh API token
         /// 刷新API令牌
         /// </summary>
-        /// <param name="token">Refresh token</param>
+        /// <param name="rq">Request data</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        ValueTask<ApiTokenData?> ApiRefreshTokenAsync(string token, CancellationToken cancellationToken = default);
+        ValueTask<ApiTokenData?> ApiRefreshTokenAsync(ApiRefreshTokenRQ rq, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Exchange API token from core system

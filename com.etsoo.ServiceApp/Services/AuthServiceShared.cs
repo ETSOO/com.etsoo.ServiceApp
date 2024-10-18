@@ -586,76 +586,83 @@ namespace com.etsoo.ServiceApp.Services
         {
             if (MinimalApiUtils.CheckDevice(context.UserAgent(), out var result, out var parser))
             {
-                var (loginResult, user, tokenData, _) = await LogInAsync(context, cancellationToken);
-
-                if (loginResult.Ok)
+                try
                 {
-                    if (user == null || tokenData == null)
-                    {
-                        result = new ActionResult
-                        {
-                            Type = "NoDataReturned",
-                            Field = "user"
-                        };
-                    }
-                    else if (tokenData.RefreshToken == null)
-                    {
-                        result = new ActionResult
-                        {
-                            Type = "NoDataReturned",
-                            Field = "refreshtoken"
-                        };
-                    }
-                    else
-                    {
-                        // Create the results
-                        var (data, _, serviceRefreshToken) = await EnrichUserAsync(user, cancellationToken);
-                        var serviceResult = ActionResult.Success;
-                        data.SaveTo(serviceResult);
+                    var (loginResult, user, tokenData, _) = await LogInAsync(context, cancellationToken);
 
-                        string core;
-                        if (!string.IsNullOrEmpty(serviceRefreshToken))
+                    if (loginResult.Ok)
+                    {
+                        if (user == null || tokenData == null)
                         {
-                            var coreData = new ApiTokenData
+                            result = new ActionResult
                             {
-                                AccessToken = tokenData.AccessToken,
-                                ExpiresIn = tokenData.ExpiresIn,
-                                TokenType = tokenData.TokenType,
-                                RefreshToken = tokenData.RefreshToken
+                                Type = "NoDataReturned",
+                                Field = "user"
                             };
-
-                            core = JsonSerializer.Serialize(coreData, ModelJsonSerializerContext.Default.ApiTokenData);
+                        }
+                        else if (tokenData.RefreshToken == null)
+                        {
+                            result = new ActionResult
+                            {
+                                Type = "NoDataReturned",
+                                Field = "refreshtoken"
+                            };
                         }
                         else
                         {
-                            // Share the same data, no necessary to return duplicate data
-                            serviceRefreshToken = tokenData.RefreshToken;
-                            core = string.Empty;
+                            // Create the results
+                            var (data, _, serviceRefreshToken) = await EnrichUserAsync(user, cancellationToken);
+                            var serviceResult = ActionResult.Success;
+                            data.SaveTo(serviceResult);
+
+                            string core;
+                            if (!string.IsNullOrEmpty(serviceRefreshToken))
+                            {
+                                var coreData = new ApiTokenData
+                                {
+                                    AccessToken = tokenData.AccessToken,
+                                    ExpiresIn = tokenData.ExpiresIn,
+                                    TokenType = tokenData.TokenType,
+                                    RefreshToken = tokenData.RefreshToken
+                                };
+
+                                core = JsonSerializer.Serialize(coreData, ModelJsonSerializerContext.Default.ApiTokenData);
+                            }
+                            else
+                            {
+                                // Share the same data, no necessary to return duplicate data
+                                serviceRefreshToken = tokenData.RefreshToken;
+                                core = string.Empty;
+                            }
+
+                            // Return the refresh token
+                            serviceResult.Data[ServiceConstants.RefreshTokenName] = serviceRefreshToken;
+
+                            // Service passphrase
+                            // Passphrase is encrypted by front-end information for random string while the device id is encrypted by the parser data
+                            var randomChars = CryptographyUtils.CreateRandString(RandStringKind.All, 32).ToString();
+                            var passphraseKey = $"{user.Uid}-{App.Configuration.AppId}";
+                            var passphrase = EncryptWeb(randomChars, passphraseKey);
+                            var deviceId = Encrypt(randomChars, parser.ToShortName());
+                            serviceResult.Data["Passphrase"] = passphrase;
+                            serviceResult.Data["ClientDeviceId"] = deviceId;
+
+                            var service = JsonSerializer.Serialize(serviceResult, CommonJsonSerializerContext.Default.ActionResult);
+
+                            // Redirect to the success URL
+                            var successUrl = App.Configuration.AuthSuccessUrl;
+                            context.Response.Redirect($"{successUrl}?result={HttpUtility.UrlEncode(service)}&core={HttpUtility.UrlEncode(core)}", true);
+                            return;
                         }
-
-                        // Return the refresh token
-                        serviceResult.Data[ServiceConstants.RefreshTokenName] = serviceRefreshToken;
-
-                        // Service passphrase
-                        // Passphrase is encrypted by front-end information for random string while the device id is encrypted by the parser data
-                        var randomChars = CryptographyUtils.CreateRandString(RandStringKind.All, 32).ToString();
-                        var passphraseKey = $"{user.Uid}-{App.Configuration.AppId}";
-                        var passphrase = EncryptWeb(randomChars, passphraseKey);
-                        var deviceId = Encrypt(randomChars, parser.ToShortName());
-                        serviceResult.Data["Passphrase"] = passphrase;
-                        serviceResult.Data["ClientDeviceId"] = deviceId;
-
-                        var service = JsonSerializer.Serialize(serviceResult, CommonJsonSerializerContext.Default.ActionResult);
-
-                        // Redirect to the success URL
-                        var successUrl = App.Configuration.AuthSuccessUrl;
-                        context.Response.Redirect($"{successUrl}?result={HttpUtility.UrlEncode(service)}&core={HttpUtility.UrlEncode(core)}", true);
-                        return;
+                    }
+                    else
+                    {
+                        result = loginResult;
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    result = loginResult;
+                    result = LogException(ex);
                 }
             }
 
@@ -710,7 +717,13 @@ namespace com.etsoo.ServiceApp.Services
                 return (ApplicationErrors.NoValidData.AsResult("Token"), null);
             }
 
-            var (result, pd, refreshToken) = await EnrichRefreshTokenAsync(token, cancellationToken);
+            var rq = new ApiRefreshTokenRQ
+            {
+                Token = token,
+                AppId = App.Configuration.AppId
+            };
+
+            var (result, pd, refreshToken) = await EnrichRefreshTokenAsync(rq, cancellationToken);
             if (result.Ok && pd != null)
             {
                 pd.SaveTo(result);
@@ -723,12 +736,12 @@ namespace com.etsoo.ServiceApp.Services
         /// Enrich refresh token for service application, default implementation is to refresh the token from the core system
         /// 为服务应用增强刷新令牌，默认实现是从核心系统刷新令牌
         /// </summary>
-        /// <param name="token">Refresh token</param>
+        /// <param name="rq">Request data</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result & public data & new refresh token</returns>
-        protected virtual async ValueTask<(IActionResult result, PublicServiceUserData? data, string? newRefreshToken)> EnrichRefreshTokenAsync(string token, CancellationToken cancellationToken)
+        protected virtual async ValueTask<(IActionResult result, PublicServiceUserData? data, string? newRefreshToken)> EnrichRefreshTokenAsync(ApiRefreshTokenRQ rq, CancellationToken cancellationToken)
         {
-            var tokenData = await RefreshTokenAsync(token, cancellationToken);
+            var tokenData = await RefreshTokenAsync(rq.Token, cancellationToken);
             if (tokenData == null)
             {
                 return (ApplicationErrors.TokenExpired.AsResult(), null, null);
@@ -738,6 +751,11 @@ namespace com.etsoo.ServiceApp.Services
             if (user == null)
             {
                 return (ApplicationErrors.NoDataReturned.AsResult("User"), null, null);
+            }
+
+            if (user.Scopes?.Contains(CurrentUser.AppIdToScope(rq.AppId)) is not true)
+            {
+                return (ApplicationErrors.AccessDenied.AsResult("Scope"), null, null);
             }
 
             var refreshToken = tokenData.RefreshToken;
@@ -786,12 +804,12 @@ namespace com.etsoo.ServiceApp.Services
         /// Refresh API token
         /// 刷新API令牌
         /// </summary>
-        /// <param name="token">Refresh token</param>
+        /// <param name="rq">Request data</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async ValueTask<ApiTokenData?> ApiRefreshTokenAsync(string token, CancellationToken cancellationToken = default)
+        public async ValueTask<ApiTokenData?> ApiRefreshTokenAsync(ApiRefreshTokenRQ rq, CancellationToken cancellationToken = default)
         {
-            var (result, pd, refreshToken) = await EnrichRefreshTokenAsync(token, cancellationToken);
+            var (result, pd, refreshToken) = await EnrichRefreshTokenAsync(rq, cancellationToken);
             if (result.Ok && pd != null && !string.IsNullOrEmpty(refreshToken))
             {
                 return new ApiTokenData
