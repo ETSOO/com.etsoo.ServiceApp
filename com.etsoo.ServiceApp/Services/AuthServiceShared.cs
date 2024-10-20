@@ -850,5 +850,23 @@ namespace com.etsoo.ServiceApp.Services
                 RefreshToken = tokenData.RefreshToken
             };
         }
+
+        /// <summary>
+        /// Sign out
+        /// 退出
+        /// </summary>
+        /// <param name="token">Refresh token</param>
+        /// <returns>Task</returns>
+        public virtual async ValueTask<IActionResult> SignoutAsync(string token)
+        {
+            if (User == null)
+            {
+                return ApplicationErrors.NoUserFound.AsResult();
+            }
+
+            await Task.CompletedTask;
+
+            return ActionResult.Success;
+        }
     }
 }

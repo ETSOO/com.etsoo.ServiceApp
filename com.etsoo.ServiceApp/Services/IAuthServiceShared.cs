@@ -128,5 +128,13 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
         ValueTask<ApiTokenData?> ExchangeTokenAsync(string token, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Sign out
+        /// 退出
+        /// </summary>
+        /// <param name="token">Refresh token</param>
+        /// <returns>Task</returns>
+        ValueTask<IActionResult> SignoutAsync(string token);
     }
 }
