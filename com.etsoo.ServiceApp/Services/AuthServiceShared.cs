@@ -783,6 +783,10 @@ namespace com.etsoo.ServiceApp.Services
             var data = new PublicServiceUserData
             {
                 Name = user.Name,
+                GivenName = user.GivenName,
+                FamilyName = user.FamilyName,
+                LatinGivenName = user.LatinGivenName,
+                LatinFamilyName = user.LatinFamilyName,
                 Avatar = user.Avatar,
                 Organization = user.OrganizationInt > 0 ? user.OrganizationInt : null,
                 IsChannel = !string.IsNullOrEmpty(user.ChannelOrganization),
