@@ -3,7 +3,6 @@ using com.etsoo.ApiModel.Dto.SmartERP.MessageQueue;
 using com.etsoo.ApiModel.RQ.SmartERP;
 using com.etsoo.ApiProxy.Defs;
 using com.etsoo.CoreFramework.User;
-using com.etsoo.Localization;
 using com.etsoo.MessageQueue;
 using com.etsoo.ServiceApp.Application;
 using Microsoft.Extensions.DependencyInjection;
@@ -173,8 +172,8 @@ namespace com.etsoo.ServiceApp.Tools
             }
 
             var ci = new CultureInfo(culture ?? _settings.Culture);
-            if (!CultureInfo.CurrentCulture.Name.Equals(ci.Name))
-                LocalizationUtils.SetCulture(ci);
+            //if (!CultureInfo.CurrentCulture.Name.Equals(ci.Name))
+            //    LocalizationUtils.SetCulture(ci);
 
             var user = T.Create(userDataResult.Data, _ip, ci, _settings.Region);
             if (user == null)
