@@ -199,11 +199,9 @@ namespace com.etsoo.ServiceApp.Services
                 return null;
             }
 
-            using var jsonContent = JsonContent.Create(rq, ModelJsonSerializerContext.Default.AuthCreateTokenRQ);
-
             var api = $"{App.Configuration.ApiUrl}/Auth/OAuthCreateToken";
 
-            using var response = await _clientFactory.CreateClient().PostAsync(api, jsonContent, cancellationToken);
+            using var response = await _clientFactory.CreateClient().PostAsJsonAsync(api, rq, ModelJsonSerializerContext.Default.AuthCreateTokenRQ, cancellationToken);
 
             try
             {
@@ -242,11 +240,9 @@ namespace com.etsoo.ServiceApp.Services
 
             try
             {
-                using var jsonContent = JsonContent.Create(rq, ModelJsonSerializerContext.Default.AuthRefreshTokenRQ);
-
                 var api = $"{App.Configuration.ApiUrl}/Auth/OAuthRefreshToken";
 
-                using var response = await _clientFactory.CreateClient().PostAsync(api, jsonContent, cancellationToken);
+                using var response = await _clientFactory.CreateClient().PostAsJsonAsync(api, rq, ModelJsonSerializerContext.Default.AuthRefreshTokenRQ, cancellationToken);
 
                 try
                 {
@@ -291,11 +287,9 @@ namespace com.etsoo.ServiceApp.Services
 
             try
             {
-                using var jsonContent = JsonContent.Create(rq, ModelJsonSerializerContext.Default.AuthRefreshTokenRQ);
-
                 var api = $"{App.Configuration.ApiUrl}/Auth/OAuthRefreshTokenResult";
 
-                using var response = await _clientFactory.CreateClient().PostAsync(api, jsonContent, cancellationToken);
+                using var response = await _clientFactory.CreateClient().PostAsJsonAsync(api, rq, ModelJsonSerializerContext.Default.AuthRefreshTokenRQ, cancellationToken);
 
                 try
                 {
