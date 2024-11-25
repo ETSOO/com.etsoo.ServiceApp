@@ -198,7 +198,18 @@ namespace com.etsoo.ServiceApp.Services
 
             using var response = await _clientFactory.CreateClient().PostAsync(api, jsonContent, cancellationToken);
 
-            response.EnsureSuccessStatusCode();
+            try
+            {
+                response.EnsureSuccessStatusCode();
+            }
+            catch
+            {
+                // Log the response content
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                Logger.LogError("CreateTokenAsync failed with response: {content}", content);
+
+                throw;
+            }
 
             return await response.Content.ReadFromJsonAsync(ModelJsonSerializerContext.Default.AppTokenData, cancellationToken);
         }
@@ -230,7 +241,18 @@ namespace com.etsoo.ServiceApp.Services
 
                 using var response = await _clientFactory.CreateClient().PostAsync(api, jsonContent, cancellationToken);
 
-                response.EnsureSuccessStatusCode();
+                try
+                {
+                    response.EnsureSuccessStatusCode();
+                }
+                catch
+                {
+                    // Log the response content
+                    var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                    Logger.LogError("RefreshTokenAsync failed with response: {content}", content);
+
+                    throw;
+                }
 
                 return await response.Content.ReadFromJsonAsync(ModelJsonSerializerContext.Default.AppTokenData, cancellationToken);
             }
@@ -268,7 +290,18 @@ namespace com.etsoo.ServiceApp.Services
 
                 using var response = await _clientFactory.CreateClient().PostAsync(api, jsonContent, cancellationToken);
 
-                response.EnsureSuccessStatusCode();
+                try
+                {
+                    response.EnsureSuccessStatusCode();
+                }
+                catch
+                {
+                    // Log the response content
+                    var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                    Logger.LogError("RefreshTokenResultAsync failed with response: {content}", content);
+
+                    throw;
+                }
 
                 // Get the refresh token header
                 var newRefreshToken = response.Headers.GetValues(Constants.RefreshTokenHeaderName).FirstOrDefault();
@@ -317,7 +350,19 @@ namespace com.etsoo.ServiceApp.Services
                 var api = $"{App.Configuration.ApiUrl}/Auth/OAuthUserInfo";
 
                 using var response = await client.GetAsync(api, cancellationToken);
-                response.EnsureSuccessStatusCode();
+
+                try
+                {
+                    response.EnsureSuccessStatusCode();
+                }
+                catch
+                {
+                    // Log the response content
+                    var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                    Logger.LogError("GetUserInfoAsync failed with response: {content}", content);
+
+                    throw;
+                }
 
                 return await response.Content.ReadFromJsonAsync(ModelJsonSerializerContext.Default.CurrentUser, cancellationToken);
             }
