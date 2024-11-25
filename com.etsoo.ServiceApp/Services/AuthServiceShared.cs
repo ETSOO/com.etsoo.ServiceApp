@@ -222,15 +222,23 @@ namespace com.etsoo.ServiceApp.Services
             // Siganature
             rq.Sign = rq.SignWith(App.Configuration.AppSecret);
 
-            using var jsonContent = JsonContent.Create(rq, ModelJsonSerializerContext.Default.AuthRefreshTokenRQ);
+            try
+            {
+                using var jsonContent = JsonContent.Create(rq, ModelJsonSerializerContext.Default.AuthRefreshTokenRQ);
 
-            var api = $"{App.Configuration.ApiUrl}/Auth/OAuthRefreshToken";
+                var api = $"{App.Configuration.ApiUrl}/Auth/OAuthRefreshToken";
 
-            using var response = await _clientFactory.CreateClient().PostAsync(api, jsonContent, cancellationToken);
+                using var response = await _clientFactory.CreateClient().PostAsync(api, jsonContent, cancellationToken);
 
-            response.EnsureSuccessStatusCode();
+                response.EnsureSuccessStatusCode();
 
-            return await response.Content.ReadFromJsonAsync(ModelJsonSerializerContext.Default.AppTokenData, cancellationToken);
+                return await response.Content.ReadFromJsonAsync(ModelJsonSerializerContext.Default.AppTokenData, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                LogException(ex);
+                return null;
+            }
         }
 
         /// <summary>
@@ -252,29 +260,37 @@ namespace com.etsoo.ServiceApp.Services
             // Siganature
             rq.Sign = rq.SignWith(App.Configuration.AppSecret);
 
-            using var jsonContent = JsonContent.Create(rq, ModelJsonSerializerContext.Default.AuthRefreshTokenRQ);
-
-            var api = $"{App.Configuration.ApiUrl}/Auth/OAuthRefreshTokenResult";
-
-            using var response = await _clientFactory.CreateClient().PostAsync(api, jsonContent, cancellationToken);
-
-            response.EnsureSuccessStatusCode();
-
-            // Get the refresh token header
-            var newRefreshToken = response.Headers.GetValues(Constants.RefreshTokenHeaderName).FirstOrDefault();
-
-            if (string.IsNullOrEmpty(newRefreshToken))
+            try
             {
-                return (ApplicationErrors.NoDataReturned.AsResult("RefreshToken"), null);
-            }
+                using var jsonContent = JsonContent.Create(rq, ModelJsonSerializerContext.Default.AuthRefreshTokenRQ);
 
-            var result = await response.Content.ReadFromJsonAsync(CommonJsonSerializerContext.Default.IActionResult, cancellationToken);
-            if (result == null)
+                var api = $"{App.Configuration.ApiUrl}/Auth/OAuthRefreshTokenResult";
+
+                using var response = await _clientFactory.CreateClient().PostAsync(api, jsonContent, cancellationToken);
+
+                response.EnsureSuccessStatusCode();
+
+                // Get the refresh token header
+                var newRefreshToken = response.Headers.GetValues(Constants.RefreshTokenHeaderName).FirstOrDefault();
+
+                if (string.IsNullOrEmpty(newRefreshToken))
+                {
+                    return (ApplicationErrors.NoDataReturned.AsResult("RefreshToken"), null);
+                }
+
+                var result = await response.Content.ReadFromJsonAsync(CommonJsonSerializerContext.Default.IActionResult, cancellationToken);
+                if (result == null)
+                {
+                    return (ApplicationErrors.NoDataReturned.AsResult("Result"), null);
+                }
+
+                return (result, newRefreshToken);
+            }
+            catch (Exception ex)
             {
-                return (ApplicationErrors.NoDataReturned.AsResult("Result"), null);
+                var result = LogException(ex);
+                return (result, null);
             }
-
-            return (result, newRefreshToken);
         }
 
         /// <summary>
@@ -296,12 +312,20 @@ namespace com.etsoo.ServiceApp.Services
             var client = _clientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(tokenData.TokenType, tokenData.AccessToken);
 
-            var api = $"{App.Configuration.ApiUrl}/Auth/OAuthUserInfo";
+            try
+            {
+                var api = $"{App.Configuration.ApiUrl}/Auth/OAuthUserInfo";
 
-            using var response = await client.GetAsync(api, cancellationToken);
-            response.EnsureSuccessStatusCode();
+                using var response = await client.GetAsync(api, cancellationToken);
+                response.EnsureSuccessStatusCode();
 
-            return await response.Content.ReadFromJsonAsync(ModelJsonSerializerContext.Default.CurrentUser, cancellationToken);
+                return await response.Content.ReadFromJsonAsync(ModelJsonSerializerContext.Default.CurrentUser, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                LogException(ex);
+                return null;
+            }
         }
 
         /// <summary>
@@ -670,27 +694,6 @@ namespace com.etsoo.ServiceApp.Services
             var url = App.Configuration.AuthFailureUrl;
             var jsonResult = JsonSerializer.Serialize(result, CommonJsonSerializerContext.Default.ActionResult);
             context.Response.Redirect($"{url}?error={HttpUtility.UrlEncode(jsonResult)}", true);
-        }
-
-        private (ActionResult result, string? RefreshToken) CreateCoreTokenResult(CurrentUser user, AppTokenData tokenData)
-        {
-            var publicData = new PublicUserData
-            {
-                Name = user.Name,
-                Avatar = user.Avatar,
-                Organization = user.OrganizationInt > 0 ? user.OrganizationInt : null,
-                IsChannel = !string.IsNullOrEmpty(user.ChannelOrganization),
-                IsParent = !string.IsNullOrEmpty(user.ParentOrganization),
-                Role = user.RoleValue,
-                TokenScheme = tokenData.TokenType,
-                Token = tokenData.AccessToken,
-                Seconds = tokenData.ExpiresIn
-            };
-
-            var result = ActionResult.Success;
-            publicData.SaveTo(result);
-
-            return (result, tokenData.RefreshToken);
         }
 
         /// <summary>
