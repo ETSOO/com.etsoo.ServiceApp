@@ -192,6 +192,13 @@ namespace com.etsoo.ServiceApp.Services
             // Siganature
             rq.Sign = rq.SignWith(App.Configuration.AppSecret);
 
+            var vr = rq.Validate();
+            if (vr != null && !vr.Ok)
+            {
+                Logger.LogError("CreateTokenAsync failed with validation: {result}", vr);
+                return null;
+            }
+
             using var jsonContent = JsonContent.Create(rq, ModelJsonSerializerContext.Default.AuthCreateTokenRQ);
 
             var api = $"{App.Configuration.ApiUrl}/Auth/OAuthCreateToken";
@@ -789,6 +796,12 @@ namespace com.etsoo.ServiceApp.Services
         /// <returns>Result & public data & new refresh token</returns>
         protected virtual async ValueTask<(IActionResult result, PublicServiceUserData? data, string? newRefreshToken)> EnrichRefreshTokenAsync(ApiRefreshTokenRQ rq, CancellationToken cancellationToken)
         {
+            var vr = rq.Validate();
+            if (vr != null && !vr.Ok)
+            {
+                return (vr, null, null);
+            }
+
             var tokenData = await RefreshTokenAsync(rq.Token, cancellationToken);
             if (tokenData == null)
             {
