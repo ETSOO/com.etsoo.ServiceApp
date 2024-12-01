@@ -774,7 +774,11 @@ namespace com.etsoo.ServiceApp.Services
                     return ApplicationErrors.NoValidData.AsResult("Password");
                 }
 
-                var dto = new ChangePasswordDto(oldPassword, password);
+                var dto = new ChangePasswordDto(oldPassword, password)
+                {
+                    AppId = App.Configuration.AppId,
+                    AppKey = App.Configuration.AppKey,
+                };
 
                 return await ChangePasswordAsync(dto, cancellationToken);
             }
