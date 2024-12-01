@@ -15,25 +15,6 @@ namespace com.etsoo.ServiceApp.Services
     public interface IAuthServiceShared : IServiceBase, IAuthClient
     {
         /// <summary>
-        /// Change user password
-        /// 修改用户密码
-        /// </summary>
-        /// <param name="rq">Request data</param>
-        /// <param name="userAgent">HTTP user agent</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Result</returns>
-        ValueTask<IActionResult> ChangePasswordAsync(ChangePasswordRQ rq, string? userAgent, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Change user password
-        /// 修改用户密码
-        /// </summary>
-        /// <param name="data">Request data</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Result</returns>
-        Task<IActionResult> ChangePasswordAsync(ChangePasswordDto data, CancellationToken cancellationToken = default);
-
-        /// <summary>
         /// Get server auth URL, for back-end processing
         /// 获取服务器授权URL，用于后端处理
         /// </summary>
