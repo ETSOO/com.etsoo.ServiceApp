@@ -56,6 +56,16 @@ namespace com.etsoo.ServiceApp.Services
         ValueTask<(IActionResult result, string? newRefreshToken)> RefreshTokenAsync(RefreshTokenData data, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Refresh token, only for the service application
+        /// 刷新令牌，仅用于服务应用
+        /// </summary>
+        /// <param name="accessor">HTTP accessor</param>
+        /// <param name="rq">Request data</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result</returns>
+        ValueTask<IActionResult> RefreshTokenAsync(IHttpContextAccessor accessor, RefreshTokenRQ rq, CancellationToken cancellationToken);
+
+        /// <summary>
         /// Refresh the token with result
         /// 刷新访问令牌为结果
         /// </summary>
@@ -146,5 +156,15 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result & new refresh token</returns>
         Task<(IActionResult result, string? newRefreshToken)> SwitchOrgAsync(SwitchOrgRQ rq, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Switch organization
+        /// 机构切换
+        /// </summary>
+        /// <param name="accessor">HTTP accessor</param>
+        /// <param name="rq">Request data</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result & new refresh token</returns>
+        Task<IActionResult> SwitchOrgAsync(IHttpContextAccessor accessor, SwitchOrgRQ rq, CancellationToken cancellationToken = default);
     }
 }

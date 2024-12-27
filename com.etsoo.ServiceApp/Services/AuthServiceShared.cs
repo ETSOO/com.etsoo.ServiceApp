@@ -222,6 +222,49 @@ namespace com.etsoo.ServiceApp.Services
         }
 
         /// <summary>
+        /// Refresh token, only for the service application
+        /// 刷新令牌，仅用于服务应用
+        /// </summary>
+        /// <param name="accessor">HTTP accessor</param>
+        /// <param name="rq">Request data</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result</returns>
+        public async ValueTask<IActionResult> RefreshTokenAsync(IHttpContextAccessor accessor, RefreshTokenRQ rq, CancellationToken cancellationToken)
+        {
+            // Token
+            string? token;
+            if (accessor.HttpContext?.Request.Headers.TryGetValue(Constants.RefreshTokenHeaderName, out var value) is true)
+            {
+                token = value.ToString();
+            }
+            else
+            {
+                return ApplicationErrors.NoValidData.AsResult("Token");
+            }
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return ApplicationErrors.NoValidData.AsResult("Token");
+            }
+
+            var data = new RefreshTokenData
+            {
+                DeviceId = rq.DeviceId,
+                UserAgent = accessor.UserAgent(),
+                Token = token
+            };
+
+            var (result, newRefeshToken) = await RefreshTokenAsync(data, cancellationToken);
+
+            if (result.Ok && newRefeshToken != null)
+            {
+                MinimalApiUtils.OutputRefreshToken(accessor, newRefeshToken);
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Refresh the token
         /// 刷新访问令牌
         /// </summary>
@@ -944,6 +987,26 @@ namespace com.etsoo.ServiceApp.Services
             await Task.CompletedTask;
 
             return ActionResult.Success;
+        }
+
+        /// <summary>
+        /// Switch organization
+        /// 机构切换
+        /// </summary>
+        /// <param name="accessor">HTTP accessor</param>
+        /// <param name="rq">Request data</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result & new refresh token</returns>
+        public virtual async Task<IActionResult> SwitchOrgAsync(IHttpContextAccessor accessor, SwitchOrgRQ rq, CancellationToken cancellationToken = default)
+        {
+            var (result, newRefeshToken) = await SwitchOrgAsync(rq, cancellationToken);
+
+            if (result.Ok && newRefeshToken != null)
+            {
+                MinimalApiUtils.OutputRefreshToken(accessor, newRefeshToken);
+            }
+
+            return result;
         }
 
         /// <summary>
