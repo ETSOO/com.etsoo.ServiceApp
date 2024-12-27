@@ -134,7 +134,17 @@ namespace com.etsoo.ServiceApp.Services
         /// 退出
         /// </summary>
         /// <param name="token">Refresh token</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Task</returns>
-        ValueTask<IActionResult> SignoutAsync(string token);
+        ValueTask<IActionResult> SignoutAsync(string token, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Switch organization
+        /// 机构切换
+        /// </summary>
+        /// <param name="rq">Request data</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result & new refresh token</returns>
+        Task<(IActionResult result, string? newRefreshToken)> SwitchOrgAsync(SwitchOrgRQ rq, CancellationToken cancellationToken = default);
     }
 }

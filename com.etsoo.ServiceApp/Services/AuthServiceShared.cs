@@ -34,6 +34,8 @@ namespace com.etsoo.ServiceApp.Services
         // 3 hours
         const int EncryptionValidSeconds = 10800;
 
+        const string BearerTokenType = "Bearer";
+
         readonly CoreFramework.Authentication.IAuthService _authService;
         readonly IHttpClientFactory _clientFactory;
 
@@ -670,59 +672,37 @@ namespace com.etsoo.ServiceApp.Services
                                 Field = "user"
                             };
                         }
-                        else if (tokenData.RefreshToken == null)
-                        {
-                            result = new ActionResult
-                            {
-                                Type = "NoDataReturned",
-                                Field = "refreshtoken"
-                            };
-                        }
                         else
                         {
                             // Create the results
-                            var (data, _, serviceRefreshToken) = await EnrichUserAsync(user, cancellationToken);
-                            var serviceResult = ActionResult.Success;
-                            data.SaveTo(serviceResult);
+                            var (service, core, serviceRefreshToken) = await EnrichUserResultsAsync(user, tokenData, cancellationToken);
 
-                            string core;
-                            if (!string.IsNullOrEmpty(serviceRefreshToken))
+                            if (service.Ok)
                             {
-                                var coreData = new ApiTokenData
-                                {
-                                    AccessToken = tokenData.AccessToken,
-                                    ExpiresIn = tokenData.ExpiresIn,
-                                    TokenType = tokenData.TokenType,
-                                    RefreshToken = tokenData.RefreshToken
-                                };
+                                // Return the refresh token
+                                service.Data[ServiceConstants.RefreshTokenName] = serviceRefreshToken;
 
-                                core = JsonSerializer.Serialize(coreData, ModelJsonSerializerContext.Default.ApiTokenData);
+                                // Service passphrase
+                                // Passphrase is encrypted by front-end information for random string while the device id is encrypted by the parser data
+                                var randomChars = CryptographyUtils.CreateRandString(RandStringKind.All, 32).ToString();
+                                var passphraseKey = $"{user.Uid}-{App.Configuration.AppId}";
+                                var passphrase = EncryptWeb(randomChars, passphraseKey);
+                                var deviceId = Encrypt(randomChars, parser.ToShortName());
+                                service.Data["Passphrase"] = passphrase;
+                                service.Data["ClientDeviceId"] = deviceId;
+
+                                var serviceJson = JsonSerializer.Serialize(service, CommonJsonSerializerContext.Default.ActionResult);
+                                var coreJson = core == null ? string.Empty : JsonSerializer.Serialize(core, ModelJsonSerializerContext.Default.ApiTokenData);
+
+                                // Redirect to the success URL
+                                var successUrl = App.Configuration.AuthSuccessUrl;
+                                context.Response.Redirect($"{successUrl}?result={HttpUtility.UrlEncode(serviceJson)}&core={HttpUtility.UrlEncode(coreJson)}", true);
+                                return;
                             }
                             else
                             {
-                                // Share the same data, no necessary to return duplicate data
-                                serviceRefreshToken = tokenData.RefreshToken;
-                                core = string.Empty;
+                                result = service;
                             }
-
-                            // Return the refresh token
-                            serviceResult.Data[ServiceConstants.RefreshTokenName] = serviceRefreshToken;
-
-                            // Service passphrase
-                            // Passphrase is encrypted by front-end information for random string while the device id is encrypted by the parser data
-                            var randomChars = CryptographyUtils.CreateRandString(RandStringKind.All, 32).ToString();
-                            var passphraseKey = $"{user.Uid}-{App.Configuration.AppId}";
-                            var passphrase = EncryptWeb(randomChars, passphraseKey);
-                            var deviceId = Encrypt(randomChars, parser.ToShortName());
-                            serviceResult.Data["Passphrase"] = passphrase;
-                            serviceResult.Data["ClientDeviceId"] = deviceId;
-
-                            var service = JsonSerializer.Serialize(serviceResult, CommonJsonSerializerContext.Default.ActionResult);
-
-                            // Redirect to the success URL
-                            var successUrl = App.Configuration.AuthSuccessUrl;
-                            context.Response.Redirect($"{successUrl}?result={HttpUtility.UrlEncode(service)}&core={HttpUtility.UrlEncode(core)}", true);
-                            return;
                         }
                     }
                     else
@@ -859,6 +839,43 @@ namespace com.etsoo.ServiceApp.Services
             return (data, user, null);
         }
 
+        private async Task<(ActionResult service, ApiTokenData? core, string? serviceRefreshToken)> EnrichUserResultsAsync(ICurrentUser user, AppTokenData tokenData, CancellationToken cancellationToken)
+        {
+            if (tokenData.RefreshToken == null)
+            {
+                return (new ActionResult
+                {
+                    Type = "NoDataReturned",
+                    Field = "refreshtoken"
+                }, null, null);
+            }
+
+            var (data, _, serviceRefreshToken) = await EnrichUserAsync(user, cancellationToken);
+
+            var serviceResult = ActionResult.Success;
+            data.SaveTo(serviceResult);
+
+            ApiTokenData? core;
+            if (!string.IsNullOrEmpty(serviceRefreshToken))
+            {
+                core = new ApiTokenData
+                {
+                    AccessToken = tokenData.AccessToken,
+                    ExpiresIn = tokenData.ExpiresIn,
+                    TokenType = tokenData.TokenType,
+                    RefreshToken = tokenData.RefreshToken
+                };
+            }
+            else
+            {
+                // Share the same data, no necessary to return duplicate data
+                serviceRefreshToken = tokenData.RefreshToken;
+                core = null;
+            }
+
+            return (serviceResult, core, serviceRefreshToken);
+        }
+
         /// <summary>
         /// Refresh API token
         /// 刷新API令牌
@@ -915,8 +932,9 @@ namespace com.etsoo.ServiceApp.Services
         /// 退出
         /// </summary>
         /// <param name="token">Refresh token</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Task</returns>
-        public virtual async ValueTask<IActionResult> SignoutAsync(string token)
+        public virtual async ValueTask<IActionResult> SignoutAsync(string token, CancellationToken cancellationToken = default)
         {
             if (User == null)
             {
@@ -926,6 +944,85 @@ namespace com.etsoo.ServiceApp.Services
             await Task.CompletedTask;
 
             return ActionResult.Success;
+        }
+
+        /// <summary>
+        /// Switch organization
+        /// 机构切换
+        /// </summary>
+        /// <param name="rq">Request data</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result & new refresh token</returns>
+        public virtual async Task<(IActionResult result, string? newRefreshToken)> SwitchOrgAsync(SwitchOrgRQ rq, CancellationToken cancellationToken = default)
+        {
+            var proxyRQ = new SwitchOrgProxyRQ
+            {
+                AppId = App.Configuration.AppId,
+                AppKey = App.Configuration.AppKey,
+                OrganizationId = rq.OrganizationId,
+                FromOrganizationId = rq.FromOrganizationId
+            };
+
+            // Siganature
+            proxyRQ.Sign = proxyRQ.SignWith(App.Configuration.AppSecret);
+
+            try
+            {
+                var api = $"{App.Configuration.ApiUrl}/Auth/SwitchOrg";
+
+                var client = _clientFactory.CreateClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(BearerTokenType, rq.Token);
+
+                using var response = await client.PostAsJsonAsync(api, proxyRQ, ModelJsonSerializerContext.Default.SwitchOrgProxyRQ, cancellationToken);
+
+                try
+                {
+                    response.EnsureSuccessStatusCode();
+                }
+                catch
+                {
+                    // Log the response content
+                    var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                    Logger.LogError("SwitchOrgAsync failed with response: {content}", content);
+
+                    throw;
+                }
+
+                var tokenData = await response.Content.ReadFromJsonAsync(ModelJsonSerializerContext.Default.AppTokenData, cancellationToken);
+
+                if (tokenData == null)
+                {
+                    return (ApplicationErrors.NoDataReturned.AsResult("TokenData"), null);
+                }
+
+                var user = await GetUserInfoAsync(tokenData, cancellationToken);
+                if (user == null)
+                {
+                    return (ApplicationErrors.NoDataReturned.AsResult("User"), null);
+                }
+
+                // Create the results
+                var (service, core, serviceRefreshToken) = await EnrichUserResultsAsync(user, tokenData, cancellationToken);
+
+                if (service.Ok && !string.IsNullOrEmpty(serviceRefreshToken))
+                {
+                    // Return the core system data
+                    if (core != null)
+                    {
+                        service.Data["core"] = JsonSerializer.Serialize(core, ModelJsonSerializerContext.Default.ApiTokenData);
+                    }
+
+                    return (service, serviceRefreshToken);
+                }
+                else
+                {
+                    return (service, null);
+                }
+            }
+            catch (Exception ex)
+            {
+                return (LogException(ex), null);
+            }
         }
     }
 }
