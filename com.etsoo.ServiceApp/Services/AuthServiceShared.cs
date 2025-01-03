@@ -1036,7 +1036,7 @@ namespace com.etsoo.ServiceApp.Services
                 var client = _clientFactory.CreateClient();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(BearerTokenType, rq.Token);
 
-                using var response = await client.PutAsJsonAsync(api, proxyRQ, ModelJsonSerializerContext.Default.SwitchOrgProxyRQ, cancellationToken);
+                using var response = await client.PostAsJsonAsync(api, proxyRQ, ModelJsonSerializerContext.Default.SwitchOrgProxyRQ, cancellationToken);
 
                 try
                 {
