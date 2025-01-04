@@ -895,26 +895,22 @@ namespace com.etsoo.ServiceApp.Services
 
             var (data, _, serviceRefreshToken) = await EnrichUserAsync(user, cancellationToken);
 
-            var serviceResult = ActionResult.Success;
-            data.SaveTo(serviceResult);
-
-            ApiTokenData? core;
             if (!string.IsNullOrEmpty(serviceRefreshToken))
-            {
-                core = new ApiTokenData
-                {
-                    AccessToken = tokenData.AccessToken,
-                    ExpiresIn = tokenData.ExpiresIn,
-                    TokenType = tokenData.TokenType,
-                    RefreshToken = tokenData.RefreshToken
-                };
-            }
-            else
             {
                 // Share the same data, no necessary to return duplicate data
                 serviceRefreshToken = tokenData.RefreshToken;
-                core = null;
             }
+
+            var serviceResult = ActionResult.Success;
+            data.SaveTo(serviceResult);
+
+            var core = new ApiTokenData
+            {
+                AccessToken = tokenData.AccessToken,
+                ExpiresIn = tokenData.ExpiresIn,
+                TokenType = tokenData.TokenType,
+                RefreshToken = tokenData.RefreshToken
+            };
 
             return (serviceResult, core, serviceRefreshToken);
         }
