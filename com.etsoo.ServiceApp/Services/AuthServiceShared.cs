@@ -895,7 +895,7 @@ namespace com.etsoo.ServiceApp.Services
 
             var (data, _, serviceRefreshToken) = await EnrichUserAsync(user, cancellationToken);
 
-            if (!string.IsNullOrEmpty(serviceRefreshToken))
+            if (string.IsNullOrEmpty(serviceRefreshToken))
             {
                 // Share the same data, no necessary to return duplicate data
                 serviceRefreshToken = tokenData.RefreshToken;
