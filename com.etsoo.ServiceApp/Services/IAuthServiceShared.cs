@@ -42,9 +42,10 @@ namespace com.etsoo.ServiceApp.Services
         /// 刷新访问令牌
         /// </summary>
         /// <param name="refreshToken">Refresh token</param>
+        /// <param name="timeZone">Time zone</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        Task<AppTokenData?> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
+        Task<AppTokenData?> RefreshTokenAsync(string refreshToken, string timeZone, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Refresh token, only for the service application
@@ -70,9 +71,10 @@ namespace com.etsoo.ServiceApp.Services
         /// 刷新访问令牌为结果
         /// </summary>
         /// <param name="refreshToken">Refresh token</param>
+        /// <param name="timeZone">Time zone</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result & new refresh token</returns>
-        Task<(IActionResult result, string? newRefreshToken)> RefreshTokenResultAsync(string refreshToken, CancellationToken cancellationToken = default);
+        Task<(IActionResult result, string? newRefreshToken)> RefreshTokenResultAsync(string refreshToken, string timeZone, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Get user info
@@ -135,9 +137,10 @@ namespace com.etsoo.ServiceApp.Services
         /// 从核心系统交换API令牌
         /// </summary>
         /// <param name="token">Refresh token</param>
+        /// <param name="timeZone">Time zone</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        ValueTask<ApiTokenData?> ExchangeTokenAsync(string token, CancellationToken cancellationToken = default);
+        ValueTask<ApiTokenData?> ExchangeTokenAsync(string token, string timeZone, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Sign out

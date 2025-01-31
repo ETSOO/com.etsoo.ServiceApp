@@ -251,7 +251,8 @@ namespace com.etsoo.ServiceApp.Services
             {
                 DeviceId = rq.DeviceId,
                 UserAgent = accessor.UserAgent(),
-                Token = token
+                Token = token,
+                TimeZone = rq.TimeZone
             };
 
             var (result, newRefeshToken) = await RefreshTokenAsync(data, cancellationToken);
@@ -269,15 +270,17 @@ namespace com.etsoo.ServiceApp.Services
         /// 刷新访问令牌
         /// </summary>
         /// <param name="refreshToken">Refresh token</param>
+        /// <param name="timeZone">Time zone</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async Task<AppTokenData?> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
+        public async Task<AppTokenData?> RefreshTokenAsync(string refreshToken, string timeZone, CancellationToken cancellationToken = default)
         {
             var rq = new AuthRefreshTokenRQ
             {
                 AppId = App.Configuration.AppId,
                 AppKey = App.Configuration.AppKey,
-                RefreshToken = refreshToken
+                RefreshToken = refreshToken,
+                TimeZone = timeZone
             };
 
             // Siganature
@@ -316,15 +319,17 @@ namespace com.etsoo.ServiceApp.Services
         /// 刷新访问令牌为结果
         /// </summary>
         /// <param name="refreshToken">Refresh token</param>
+        /// <param name="timeZone">Time zone</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result & new refresh token</returns>
-        public async Task<(IActionResult result, string? newRefreshToken)> RefreshTokenResultAsync(string refreshToken, CancellationToken cancellationToken = default)
+        public async Task<(IActionResult result, string? newRefreshToken)> RefreshTokenResultAsync(string refreshToken, string timeZone, CancellationToken cancellationToken = default)
         {
             var rq = new AuthRefreshTokenRQ
             {
                 AppId = App.Configuration.AppId,
                 AppKey = App.Configuration.AppKey,
-                RefreshToken = refreshToken
+                RefreshToken = refreshToken,
+                TimeZone = timeZone
             };
 
             // Siganature
@@ -792,7 +797,8 @@ namespace com.etsoo.ServiceApp.Services
             var rq = new ApiRefreshTokenRQ
             {
                 Token = token,
-                AppId = App.Configuration.AppId
+                AppId = App.Configuration.AppId,
+                TimeZone = data.TimeZone
             };
 
             var (result, pd, refreshToken) = await EnrichRefreshTokenAsync(rq, cancellationToken);
@@ -819,7 +825,7 @@ namespace com.etsoo.ServiceApp.Services
                 return (vr, null, null);
             }
 
-            var tokenData = await RefreshTokenAsync(rq.Token, cancellationToken);
+            var tokenData = await RefreshTokenAsync(rq.Token, rq.TimeZone, cancellationToken);
             if (tokenData == null)
             {
                 return (ApplicationErrors.TokenExpired.AsResult(), null, null);
@@ -946,12 +952,13 @@ namespace com.etsoo.ServiceApp.Services
         /// 从核心系统交换API令牌
         /// </summary>
         /// <param name="token">Refresh token</param>
+        /// <param name="timeZone">Time zone</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async ValueTask<ApiTokenData?> ExchangeTokenAsync(string token, CancellationToken cancellationToken = default)
+        public async ValueTask<ApiTokenData?> ExchangeTokenAsync(string token, string timeZone, CancellationToken cancellationToken = default)
         {
             // Core system refresh token
-            var tokenData = await RefreshTokenAsync(token, cancellationToken);
+            var tokenData = await RefreshTokenAsync(token, timeZone, cancellationToken);
             if (tokenData == null || tokenData.RefreshToken == null)
             {
                 return null;
