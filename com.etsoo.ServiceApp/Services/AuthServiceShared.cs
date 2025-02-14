@@ -389,7 +389,13 @@ namespace com.etsoo.ServiceApp.Services
             if (!string.IsNullOrEmpty(tokenData.IdToken))
             {
                 var (cp, _) = _authService.ValidateIdToken(tokenData.IdToken, App.Configuration.AppSecret);
-                var user = CurrentUser.Create(cp);
+                var user = CurrentUser.Create(cp, out var reason);
+
+                if (user == null)
+                {
+                    Logger.LogError("Failed to create user: {reason}", reason);
+                }
+
                 return user;
             }
 
