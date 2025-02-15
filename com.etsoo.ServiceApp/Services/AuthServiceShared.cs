@@ -5,6 +5,7 @@ using com.etsoo.CoreFramework.Services;
 using com.etsoo.CoreFramework.User;
 using com.etsoo.ServiceApp.Application;
 using com.etsoo.UserAgentParser;
+using com.etsoo.Utils;
 using com.etsoo.Utils.Actions;
 using com.etsoo.Utils.Crypto;
 using com.etsoo.Utils.Serialization;
@@ -1043,7 +1044,7 @@ namespace com.etsoo.ServiceApp.Services
                 var api = $"{App.Configuration.ApiUrl}/Auth/SwitchOrg";
 
                 var client = _clientFactory.CreateClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(BearerTokenType, rq.Token);
+                client.AddAuthorization(BearerTokenType, rq.Token);
 
                 using var response = await client.PutAsJsonAsync(api, proxyRQ, ModelJsonSerializerContext.Default.SwitchOrgProxyRQ, cancellationToken);
 
