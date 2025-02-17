@@ -203,8 +203,9 @@ namespace com.etsoo.ServiceApp.Services
             }
 
             var api = $"{App.Configuration.ApiUrl}/Auth/OAuthCreateToken";
+            var client = _clientFactory.CreateClient();
 
-            using var response = await _clientFactory.CreateClient().PostAsJsonAsync(api, rq, ModelJsonSerializerContext.Default.AuthCreateTokenRQ, cancellationToken);
+            using var response = await client.PostAsJsonAsync(api, rq, ModelJsonSerializerContext.Default.AuthCreateTokenRQ, cancellationToken);
 
             try
             {
@@ -1028,6 +1029,12 @@ namespace com.etsoo.ServiceApp.Services
         /// <returns>Result & new refresh token</returns>
         public virtual async Task<(IActionResult result, string? newRefreshToken)> SwitchOrgAsync(SwitchOrgRQ rq, CancellationToken cancellationToken = default)
         {
+            // User logined
+            if (User == null)
+            {
+                return (ApplicationErrors.AccessDenied.AsResult(), null);
+            }
+
             var proxyRQ = new SwitchOrgProxyRQ
             {
                 AppId = App.Configuration.AppId,
@@ -1044,7 +1051,8 @@ namespace com.etsoo.ServiceApp.Services
                 var api = $"{App.Configuration.ApiUrl}/Auth/SwitchOrg";
 
                 var client = _clientFactory.CreateClient();
-                client.AddAuthorization(BearerTokenType, rq.Token);
+                client.AddAuthorizationHeader(BearerTokenType, rq.Token);
+                client.AddContentLanguageHeader(User.Language.Name);
 
                 using var response = await client.PutAsJsonAsync(api, proxyRQ, ModelJsonSerializerContext.Default.SwitchOrgProxyRQ, cancellationToken);
 
