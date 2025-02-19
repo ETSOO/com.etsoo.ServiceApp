@@ -13,9 +13,13 @@ namespace com.etsoo.ServiceApp.SmartERP
     /// </summary>
     public class SEServiceApp : ServiceCommonApp<ServiceAppConfiguration, NpgsqlConnection>, ISEServiceApp
     {
-        public SEServiceApp(IServiceCollection services, ServiceAppConfiguration configuration, IDatabase<NpgsqlConnection> db, JwtSettings? jwtSettings, JwtBearerEvents? events = null, bool modelValidated = false)
+        public SEServiceApp(IServiceCollection services, ServiceAppConfiguration configuration, IDatabase<NpgsqlConnection> db, JwtSettings? jwtSettings, JwtBearerEvents? events = null, bool modelValidated = false, int? appId = null)
             : base(services, configuration, db, jwtSettings, events, modelValidated)
         {
+            if (appId.HasValue)
+            {
+                AppId = appId.Value;
+            }
         }
     }
 }
