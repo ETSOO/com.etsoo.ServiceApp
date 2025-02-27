@@ -15,6 +15,15 @@ namespace com.etsoo.ServiceApp.Services
     public interface IAuthServiceShared : IServiceBase, IAuthClient
     {
         /// <summary>
+        /// Exchange login state
+        /// 交换登录状态
+        /// </summary>
+        /// <param name="rq">Request data</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result</returns>
+        ValueTask<IActionResult> ExchangeLoginStateAsync(LoginStateRQ rq, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Get server auth URL, for back-end processing
         /// 获取服务器授权URL，用于后端处理
         /// </summary>

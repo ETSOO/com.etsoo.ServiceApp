@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using System.Data.Common;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Web;
 
@@ -32,9 +33,6 @@ namespace com.etsoo.ServiceApp.Services
         where A : IServiceBaseApp<S, C>
         where U : ICurrentUser, IUserCreator<U>
     {
-        // 3 hours
-        const int EncryptionValidSeconds = 10800;
-
         const string BearerTokenType = "Bearer";
 
         readonly CoreFramework.Authentication.IAuthService _authService;
@@ -144,9 +142,9 @@ namespace com.etsoo.ServiceApp.Services
                 throw new ArgumentNullException(nameof(redirectUrl));
             }
 
-            // Encrypt the state, as EncriptData will add a timestamp, make the state is dynamic and no way to guess
-            // 加密状态，EncriptData会添加时间戳，使状态是动态的，没有办法猜测
-            var encryptedState = App.EncriptData(state, "", EncryptionValidSeconds);
+            // Encrypt the state
+            // 加密状态
+            var encryptedState = CryptographyUtils.AESEncrypt(state, App.Configuration.AppSecret);
 
             var rq = new AuthRequest
             {
@@ -628,7 +626,7 @@ namespace com.etsoo.ServiceApp.Services
                     return Results.BadRequest();
                 }
 
-                deviceId = region + CreateLoginState(parser.ToShortName());
+                deviceId = CreateLoginState(parser.ToShortName(), region);
             }
             else if (!this.CheckDevice(userAgent, deviceId[2..], out var result, out var d))
             {
@@ -636,16 +634,45 @@ namespace com.etsoo.ServiceApp.Services
             }
             else
             {
-                deviceId = region + CreateLoginState(d.Value.Parser.ToShortName());
+                deviceId = CreateLoginState(d.Value.Parser.ToShortName(), region);
             }
 
             var url = GetServerAuthUrl(AuthExtentions.LogInAction, deviceId, true, App.Configuration.Scopes, true);
             return Results.Content(url, "text/plain");
         }
 
-        private string CreateLoginState(string device)
+        private string CreateLoginState(string device, string region)
         {
-            return App.HashPassword(App.Configuration.AppId + device);
+            return region + App.HashPassword(App.Configuration.AppId + device);
+        }
+
+        /// <summary>
+        /// Exchange login state
+        /// 交换登录状态
+        /// </summary>
+        /// <param name="rq">Request data</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result</returns>
+        public async ValueTask<IActionResult> ExchangeLoginStateAsync(LoginStateRQ rq, CancellationToken cancellationToken = default)
+        {
+            // Check signature
+            var expectedSignature = rq.SignWith(App.Configuration.AppSecret);
+            if (!rq.Sign.Equals(expectedSignature))
+            {
+                return ApplicationErrors.NoValidData.AsResult(nameof(rq.Sign));
+            }
+
+            if (rq.TotalMinutes > 2)
+            {
+                return ApplicationErrors.SignExpired.AsResult();
+            }
+
+            await Task.CompletedTask;
+
+            var state = CreateLoginState(rq.Device, rq.Region);
+            var encryptedState = CryptographyUtils.AESEncrypt(rq.Timestamp + state, App.Configuration.AppSecret);
+
+            return ActionResult.Succeed(encryptedState);
         }
 
         /// <summary>
@@ -665,7 +692,13 @@ namespace com.etsoo.ServiceApp.Services
             var (result, tokenData, state) = await ValidateAuthAsync(context.Request, (es) =>
             {
                 // Decrypt the state
-                var s = App.DecriptData(es);
+                var bytes = CryptographyUtils.AESDecrypt(es, App.Configuration.AppSecret);
+                if (bytes == null || bytes.Length == 0)
+                {
+                    return false;
+                }
+
+                var s = Encoding.UTF8.GetString(bytes);
 
                 // We put the region code like 'CN' at the beginning of the device id
                 region = s[..2];
@@ -673,7 +706,7 @@ namespace com.etsoo.ServiceApp.Services
                 // The device id is the rest of the string
                 deviceId = s[2..];
 
-                return deviceId.Equals(CreateLoginState(parser.ToShortName()));
+                return deviceId.Equals(CreateLoginState(parser.ToShortName(), region));
             }, AuthExtentions.LogInAction, cancellationToken);
 
             if (result.Ok && tokenData != null)

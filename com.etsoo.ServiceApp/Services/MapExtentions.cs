@@ -28,6 +28,10 @@ namespace com.etsoo.ServiceApp.Services
         {
             var g = builder.MapGroup("Auth").AllowAnonymous();
 
+            g.MapPost("ExchangeLoginState", (ISEAuthService service, LoginStateRQ rq, CancellationToken cancellationToken)
+                => service.ExchangeLoginStateAsync(rq, cancellationToken)
+                ).WithDescription("Exchange login state / 交换登录状态");
+
             g.MapGet("GetLogInUrl", (ISEAuthService service, HttpContext context, string region, string? device)
                 => service.GetLogInUrlResult(context.UserAgent(), region + device)
                 ).WithDescription("Get log in URL / 获取登录地址");
