@@ -662,7 +662,7 @@ namespace com.etsoo.ServiceApp.Services
                 return ApplicationErrors.NoValidData.AsResult(nameof(rq.Sign));
             }
 
-            if (rq.TotalMinutes > 2)
+            if (rq.TotalMinutes() > 2)
             {
                 return ApplicationErrors.SignExpired.AsResult();
             }
