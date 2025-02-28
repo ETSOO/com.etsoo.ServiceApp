@@ -698,15 +698,23 @@ namespace com.etsoo.ServiceApp.Services
                     return false;
                 }
 
+                // Source state
                 var s = Encoding.UTF8.GetString(bytes);
 
                 // We put the region code like 'CN' at the beginning of the device id
                 region = s[..2];
 
-                // The device id is the rest of the string
-                deviceId = s[2..];
+                if (s.Equals(CreateLoginState(parser.ToShortName(), region)))
+                {
+                    // The device id is the rest of the string
+                    deviceId = s[2..];
 
-                return deviceId.Equals(CreateLoginState(parser.ToShortName(), region));
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }, AuthExtentions.LogInAction, cancellationToken);
 
             if (result.Ok && tokenData != null)
