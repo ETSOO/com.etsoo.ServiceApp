@@ -1093,7 +1093,6 @@ namespace com.etsoo.ServiceApp.Services
 
                 var client = _clientFactory.CreateClient();
                 client.AddAuthorizationHeader(BearerTokenType, rq.Token);
-                client.AddContentLanguageHeader(User.Language.Name);
 
                 using var response = await client.PutAsJsonAsync(api, proxyRQ, ModelJsonSerializerContext.Default.SwitchOrgProxyRQ, cancellationToken);
 
