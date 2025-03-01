@@ -24,6 +24,29 @@ namespace com.etsoo.ServiceApp.Services
         ValueTask<IActionResult> ExchangeLoginStateAsync(LoginStateRQ rq, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Get log in auth request
+        /// 获取登录授权请求
+        /// </summary>
+        /// <param name="userAgent">User agent</param>
+        /// <param name="deviceId">Region (like CN) & Device id</param>
+        /// <param name="isUrl">Is URL format or not</param>
+        /// <returns>AuthRequest</returns>
+        IResult GetAuthRequest(string? userAgent, string deviceId, bool isUrl = false);
+
+        /// <summary>
+        /// Get server auth request, for back-end processing
+        /// 获取服务器授权请求，用于后端处理
+        /// </summary>
+        /// <param name="action">Action of the request</param>
+        /// <param name="state">Specifies any string value that your application uses to maintain state between your authorization request and the authorization server's response</param>
+        /// <param name="tokenResponse">Is 'token' response, 'false' means 'code'</param>
+        /// <param name="scope">A space-delimited list of scopes that identify the resources that your application could access on the user's behalf</param>
+        /// <param name="offline">Set to true if your application needs to refresh access tokens when the user is not present at the browser</param>
+        /// <param name="loginHint">Set the parameter value to an email address or sub identifier, which is equivalent to the user's identifier ID</param>
+        /// <returns>AuthRequest</returns>
+        AuthRequest GetServerAuthRequest(string action, string state, bool tokenResponse, string scope, bool offline = false, string? loginHint = null);
+
+        /// <summary>
         /// Get server auth URL, for back-end processing
         /// 获取服务器授权URL，用于后端处理
         /// </summary>

@@ -32,6 +32,10 @@ namespace com.etsoo.ServiceApp.Services
                 => service.ExchangeLoginStateAsync(rq, cancellationToken)
                 ).WithDescription("Exchange login state / 交换登录状态");
 
+            g.MapPost("GetAuthRequest", (ISEAuthService service, HttpContext context, GetAuthRequestRQ rq, CancellationToken cancellationToken)
+                => service.GetAuthRequest(context.UserAgent(), rq.Region + rq.Device, false)
+                ).WithDescription("Get auth request / 获取授权请求");
+
             g.MapGet("GetLogInUrl", (ISEAuthService service, HttpContext context, string region, string? device)
                 => service.GetLogInUrlResult(context.UserAgent(), region + device)
                 ).WithDescription("Get log in URL / 获取登录地址");

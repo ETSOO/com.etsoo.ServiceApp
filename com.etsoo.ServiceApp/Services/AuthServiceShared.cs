@@ -110,6 +110,23 @@ namespace com.etsoo.ServiceApp.Services
         }
 
         /// <summary>
+        /// Get server auth request, for back-end processing
+        /// 获取服务器授权请求，用于后端处理
+        /// </summary>
+        /// <param name="action">Action of the request</param>
+        /// <param name="state">Specifies any string value that your application uses to maintain state between your authorization request and the authorization server's response</param>
+        /// <param name="tokenResponse">Is 'token' response, 'false' means 'code'</param>
+        /// <param name="scope">A space-delimited list of scopes that identify the resources that your application could access on the user's behalf</param>
+        /// <param name="offline">Set to true if your application needs to refresh access tokens when the user is not present at the browser</param>
+        /// <param name="loginHint">Set the parameter value to an email address or sub identifier, which is equivalent to the user's identifier ID</param>
+        /// <returns>AuthRequest</returns>
+        public AuthRequest GetServerAuthRequest(string action, string state, bool tokenResponse, string scope, bool offline = false, string? loginHint = null)
+        {
+            var responseType = tokenResponse ? AuthRequest.TokenResponseType : AuthRequest.CodeResponseType;
+            return GetAuthRequest($"{App.Configuration.ServerRedirectUrl}/{action}", responseType, scope, state, loginHint, offline ? AuthRequest.OfflineAccessType : null);
+        }
+
+        /// <summary>
         /// Get script auth URL, for front-end page
         /// 获取脚本授权URL，用于前端页面
         /// </summary>
@@ -124,8 +141,8 @@ namespace com.etsoo.ServiceApp.Services
         }
 
         /// <summary>
-        /// Get auth URL
-        /// 获取授权URL
+        /// Get auth request
+        /// 获取授权请求
         /// </summary>
         /// <param name="redirectUrl">The value must exactly match one of the authorized redirect URIs for the OAuth 2.0 client, which you configured in your client's API Console</param>
         /// <param name="responseType">Set the parameter value to 'code' for web server applications or 'token' for SPA</param>
@@ -133,9 +150,9 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="state">Specifies any string value that your application uses to maintain state between your authorization request and the authorization server's response</param>
         /// <param name="loginHint">Set the parameter value to an email address or sub identifier, which is equivalent to the user's identifer ID</param>
         /// <param name="accessType">Access type, set to 'offline' will return the refresh token</param>
-        /// <returns>URL</returns>
+        /// <returns>AuthRequest</returns>
         /// <exception cref="ArgumentNullException">Parameter 'redirectUrl' is required</exception>
-        public string GetAuthUrl(string? redirectUrl, string responseType, string scope, string state, string? loginHint = null, string? accessType = null)
+        public AuthRequest GetAuthRequest(string? redirectUrl, string responseType, string scope, string state, string? loginHint = null, string? accessType = null)
         {
             if (string.IsNullOrEmpty(redirectUrl) || !Uri.TryCreate(redirectUrl, UriKind.Absolute, out var uri))
             {
@@ -160,6 +177,27 @@ namespace com.etsoo.ServiceApp.Services
 
             // Siganature
             rq.Sign = rq.SignWith(App.Configuration.AppSecret);
+
+            // Return
+            return rq;
+        }
+
+        /// <summary>
+        /// Get auth URL
+        /// 获取授权URL
+        /// </summary>
+        /// <param name="redirectUrl">The value must exactly match one of the authorized redirect URIs for the OAuth 2.0 client, which you configured in your client's API Console</param>
+        /// <param name="responseType">Set the parameter value to 'code' for web server applications or 'token' for SPA</param>
+        /// <param name="scope">A space-delimited list of scopes that identify the resources that your application could access on the user's behalf</param>
+        /// <param name="state">Specifies any string value that your application uses to maintain state between your authorization request and the authorization server's response</param>
+        /// <param name="loginHint">Set the parameter value to an email address or sub identifier, which is equivalent to the user's identifer ID</param>
+        /// <param name="accessType">Access type, set to 'offline' will return the refresh token</param>
+        /// <returns>URL</returns>
+        /// <exception cref="ArgumentNullException">Parameter 'redirectUrl' is required</exception>
+        public string GetAuthUrl(string? redirectUrl, string responseType, string scope, string state, string? loginHint = null, string? accessType = null)
+        {
+            // Request
+            var rq = GetAuthRequest(redirectUrl, responseType, scope, state, loginHint, accessType);
 
             // Request data to JSON
             var jsonRQ = JsonSerializer.Serialize(rq, ModelJsonSerializerContext.Default.AuthRequest);
@@ -604,13 +642,14 @@ namespace com.etsoo.ServiceApp.Services
         }
 
         /// <summary>
-        /// Get log in URL result
-        /// 获取登录URL结果
+        /// Get log in auth request
+        /// 获取登录授权请求
         /// </summary>
         /// <param name="userAgent">User agent</param>
         /// <param name="deviceId">Region (like CN) & Device id</param>
-        /// <returns>Result</returns>
-        public IResult GetLogInUrlResult(string? userAgent, string deviceId)
+        /// <param name="isUrl">Is URL format or not</param>
+        /// <returns>AuthRequest</returns>
+        public IResult GetAuthRequest(string? userAgent, string deviceId, bool isUrl = false)
         {
             if (string.IsNullOrEmpty(userAgent))
             {
@@ -637,8 +676,28 @@ namespace com.etsoo.ServiceApp.Services
                 deviceId = CreateLoginState(d.Value.Parser.ToShortName(), region);
             }
 
-            var url = GetServerAuthUrl(AuthExtentions.LogInAction, deviceId, true, App.Configuration.Scopes, true);
-            return Results.Content(url, "text/plain");
+            if (isUrl)
+            {
+                var url = GetServerAuthUrl(AuthExtentions.LogInAction, deviceId, true, App.Configuration.Scopes, true);
+                return Results.Content(url, "text/plain");
+            }
+            else
+            {
+                var rq = GetServerAuthRequest(AuthExtentions.LogInAction, deviceId, true, App.Configuration.Scopes, true);
+                return Results.Json(rq, ModelJsonSerializerContext.Default.AuthRequest);
+            }
+        }
+
+        /// <summary>
+        /// Get log in URL result
+        /// 获取登录URL结果
+        /// </summary>
+        /// <param name="userAgent">User agent</param>
+        /// <param name="deviceId">Region (like CN) & Device id</param>
+        /// <returns>Result</returns>
+        public IResult GetLogInUrlResult(string? userAgent, string deviceId)
+        {
+            return GetAuthRequest(userAgent, deviceId, true);
         }
 
         private string CreateLoginState(string device, string region)
