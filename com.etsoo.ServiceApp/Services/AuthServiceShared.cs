@@ -914,7 +914,7 @@ namespace com.etsoo.ServiceApp.Services
             {
                 pd.SaveTo(result);
 
-                await EnrichUserResultAsync(user, cancellationToken);
+                await EnrichUserResultAsync(result, user, cancellationToken);
             }
 
             return (result, refreshToken);
@@ -1002,10 +1002,11 @@ namespace com.etsoo.ServiceApp.Services
         /// Enrich user result
         /// 增强用户结果
         /// </summary>
+        /// <param name="result">Action result</param>
         /// <param name="user">Current user</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Task</returns>
-        protected virtual Task EnrichUserResultAsync(ICurrentUser user, CancellationToken cancellationToken)
+        protected virtual Task EnrichUserResultAsync(IActionResult result, ICurrentUser user, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
@@ -1040,7 +1041,7 @@ namespace com.etsoo.ServiceApp.Services
             var serviceResult = ActionResult.Success;
             data.SaveTo(serviceResult);
 
-            await EnrichUserResultAsync(user, cancellationToken);
+            await EnrichUserResultAsync(serviceResult, user, cancellationToken);
 
             var core = new ApiTokenData
             {
