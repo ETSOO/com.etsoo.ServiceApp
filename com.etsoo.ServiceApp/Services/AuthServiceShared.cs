@@ -909,10 +909,12 @@ namespace com.etsoo.ServiceApp.Services
                 TimeZone = data.TimeZone
             };
 
-            var (result, pd, refreshToken) = await EnrichRefreshTokenAsync(rq, cancellationToken);
-            if (result.Ok && pd != null)
+            var (result, pd, refreshToken, user) = await EnrichRefreshTokenAsync(rq, cancellationToken);
+            if (result.Ok && pd != null && user != null)
             {
                 pd.SaveTo(result);
+
+                await EnrichUserResultAsync(user, cancellationToken);
             }
 
             return (result, refreshToken);
@@ -925,40 +927,40 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="rq">Request data</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result & public data & new refresh token</returns>
-        protected virtual async ValueTask<(IActionResult result, PublicServiceUserData? data, string? newRefreshToken)> EnrichRefreshTokenAsync(ApiRefreshTokenRQ rq, CancellationToken cancellationToken)
+        protected virtual async ValueTask<(IActionResult result, PublicServiceUserData? data, string? newRefreshToken, CurrentUser? user)> EnrichRefreshTokenAsync(ApiRefreshTokenRQ rq, CancellationToken cancellationToken)
         {
             var vr = rq.Validate();
             if (vr != null && !vr.Ok)
             {
-                return (vr, null, null);
+                return (vr, null, null, null);
             }
 
             var tokenData = await RefreshTokenAsync(rq.Token, rq.TimeZone, cancellationToken);
             if (tokenData == null)
             {
-                return (ApplicationErrors.TokenExpired.AsResult(), null, null);
+                return (ApplicationErrors.TokenExpired.AsResult(), null, null, null);
             }
 
             var user = await GetUserInfoAsync(tokenData, cancellationToken);
             if (user == null)
             {
-                return (ApplicationErrors.NoDataReturned.AsResult("User"), null, null);
+                return (ApplicationErrors.NoDataReturned.AsResult("User"), null, null, null);
             }
 
             if (user.Scopes?.Contains(CurrentUser.AppIdToScope(rq.AppId)) is not true)
             {
-                return (ApplicationErrors.AccessDenied.AsResult("Scope"), null, null);
+                return (ApplicationErrors.AccessDenied.AsResult("Scope"), null, null, null);
             }
 
             var refreshToken = tokenData.RefreshToken;
             if (string.IsNullOrEmpty(refreshToken))
             {
-                return (ApplicationErrors.NoDataReturned.AsResult("RefreshToken"), null, null);
+                return (ApplicationErrors.NoDataReturned.AsResult("RefreshToken"), null, null, null);
             }
 
             var (data, _, newRefreshToken) = await EnrichUserAsync(user, cancellationToken);
 
-            return (ActionResult.Success, data, newRefreshToken ?? refreshToken);
+            return (ActionResult.Success, data, newRefreshToken ?? refreshToken, user);
         }
 
         /// <summary>
@@ -996,6 +998,26 @@ namespace com.etsoo.ServiceApp.Services
             return (data, user, null);
         }
 
+        /// <summary>
+        /// Enrich user result
+        /// 增强用户结果
+        /// </summary>
+        /// <param name="user">Current user</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Task</returns>
+        protected virtual Task EnrichUserResultAsync(ICurrentUser user, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Enrich user results
+        /// 增强用户结果
+        /// </summary>
+        /// <param name="user">User</param>
+        /// <param name="tokenData">Token data</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Result</returns>
         private async Task<(ActionResult service, ApiTokenData? core, string? serviceRefreshToken)> EnrichUserResultsAsync(ICurrentUser user, AppTokenData tokenData, CancellationToken cancellationToken)
         {
             if (tokenData.RefreshToken == null)
@@ -1018,6 +1040,8 @@ namespace com.etsoo.ServiceApp.Services
             var serviceResult = ActionResult.Success;
             data.SaveTo(serviceResult);
 
+            await EnrichUserResultAsync(user, cancellationToken);
+
             var core = new ApiTokenData
             {
                 AccessToken = tokenData.AccessToken,
@@ -1038,7 +1062,7 @@ namespace com.etsoo.ServiceApp.Services
         /// <returns>Result</returns>
         public async ValueTask<ApiTokenData?> ApiRefreshTokenAsync(ApiRefreshTokenRQ rq, CancellationToken cancellationToken = default)
         {
-            var (result, pd, refreshToken) = await EnrichRefreshTokenAsync(rq, cancellationToken);
+            var (result, pd, refreshToken, _) = await EnrichRefreshTokenAsync(rq, cancellationToken);
             if (result.Ok && pd != null && !string.IsNullOrEmpty(refreshToken))
             {
                 return new ApiTokenData
