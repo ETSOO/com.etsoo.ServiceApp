@@ -912,9 +912,13 @@ namespace com.etsoo.ServiceApp.Services
             var (result, pd, refreshToken, user) = await EnrichRefreshTokenAsync(rq, cancellationToken);
             if (result.Ok && pd != null && user != null)
             {
-                pd.SaveTo(result);
-
                 await EnrichUserResultAsync(result, user, cancellationToken);
+                if (!result.Ok)
+                {
+                    return (result, null);
+                }
+
+                pd.SaveTo(result);
             }
 
             return (result, refreshToken);
@@ -1008,6 +1012,7 @@ namespace com.etsoo.ServiceApp.Services
         /// <returns>Task</returns>
         protected virtual Task EnrichUserResultAsync(IActionResult result, ICurrentUser user, CancellationToken cancellationToken)
         {
+            // Change the result's failure state to stop the next process
             return Task.CompletedTask;
         }
 
@@ -1030,6 +1035,15 @@ namespace com.etsoo.ServiceApp.Services
                 }, null, null);
             }
 
+            var serviceResult = ActionResult.Success;
+
+            await EnrichUserResultAsync(serviceResult, user, cancellationToken);
+
+            if (!serviceResult.Ok)
+            {
+                return (serviceResult, null, null);
+            }
+
             var (data, _, serviceRefreshToken) = await EnrichUserAsync(user, cancellationToken);
 
             if (string.IsNullOrEmpty(serviceRefreshToken))
@@ -1038,10 +1052,7 @@ namespace com.etsoo.ServiceApp.Services
                 serviceRefreshToken = tokenData.RefreshToken;
             }
 
-            var serviceResult = ActionResult.Success;
             data.SaveTo(serviceResult);
-
-            await EnrichUserResultAsync(serviceResult, user, cancellationToken);
 
             var core = new ApiTokenData
             {
