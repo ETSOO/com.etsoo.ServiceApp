@@ -804,6 +804,17 @@ namespace com.etsoo.ServiceApp.Services
         }
 
         /// <summary>
+        /// Serialize user data
+        /// 序列号用户数据
+        /// </summary>
+        /// <param name="result">Action result</param>
+        /// <returns>Result</returns>
+        protected virtual string SerializeUser(ActionResult result)
+        {
+            return JsonSerializer.Serialize(result, CommonJsonSerializerContext.Default.ActionResult);
+        }
+
+        /// <summary>
         /// Log in from OAuth2 client and authorized
         /// 从OAuth2客户端登录并授权
         /// </summary>
@@ -847,7 +858,7 @@ namespace com.etsoo.ServiceApp.Services
                                 service.Data["Passphrase"] = passphrase;
                                 service.Data["ClientDeviceId"] = deviceId;
 
-                                var serviceJson = JsonSerializer.Serialize(service, CommonJsonSerializerContext.Default.ActionResult);
+                                var serviceJson = SerializeUser(service);
                                 var coreJson = core == null ? string.Empty : JsonSerializer.Serialize(core, ModelJsonSerializerContext.Default.ApiTokenData);
 
                                 // Redirect to the success URL
