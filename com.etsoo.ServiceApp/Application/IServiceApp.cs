@@ -1,5 +1,6 @@
 ﻿using com.etsoo.CoreFramework.Application;
 using com.etsoo.CoreFramework.Authentication;
+using com.etsoo.CoreFramework.Models;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using Npgsql;
@@ -58,6 +59,15 @@ namespace com.etsoo.ServiceApp.Application
         /// <param name="typeInfo">Json type info</param>
         /// <returns>Result</returns>
         Task<string> ExchangeDataAsync<T>(T obj, JsonTypeInfo<T> typeInfo);
+
+        /// <summary>
+        /// Sign action data
+        /// 签名动作数据
+        /// </summary>
+        /// <param name="action">Action name</param>
+        /// <param name="targetId">Target ID</param>
+        /// <returns>Result</returns>
+        AppActionData SignAction(string action, long targetId);
     }
 
     /// <summary>

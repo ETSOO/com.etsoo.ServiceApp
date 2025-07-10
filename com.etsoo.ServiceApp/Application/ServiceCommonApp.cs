@@ -1,5 +1,6 @@
 ﻿using com.etsoo.CoreFramework.Application;
 using com.etsoo.CoreFramework.Authentication;
+using com.etsoo.CoreFramework.Models;
 using com.etsoo.CoreFramework.User;
 using com.etsoo.Database;
 using com.etsoo.Utils;
@@ -101,6 +102,28 @@ namespace com.etsoo.ServiceApp.Application
         {
             var json = await SharedUtils.JsonSerializeAsync(obj, typeInfo);
             return ExchangeData(json);
+        }
+
+        /// <summary>
+        /// Sign action data
+        /// 签名动作数据
+        /// </summary>
+        /// <param name="action">Action name</param>
+        /// <param name="targetId">Target ID</param>
+        /// <returns>Result</returns>
+        public AppActionData SignAction(string action, long targetId)
+        {
+            var data = new AppActionData
+            {
+                AppId = Configuration.AppId,
+                AppKey = Configuration.AppKey,
+                Action = action,
+                TargetId = targetId
+            };
+
+            data.SignWith(Configuration.AppSecret);
+
+            return data;
         }
     }
 }
