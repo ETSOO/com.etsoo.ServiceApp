@@ -121,7 +121,7 @@ namespace com.etsoo.ServiceApp.Application
                 TargetId = targetId
             };
 
-            data.SignWith(Configuration.AppSecret);
+            data.Sign = data.SignWith(Configuration.AppSecret);
 
             return data;
         }
