@@ -863,7 +863,7 @@ namespace com.etsoo.ServiceApp.Services
 
                                 // Redirect to the success URL
                                 var successUrl = App.Configuration.AuthSuccessUrl;
-                                context.Response.Redirect($"{successUrl}?result={HttpUtility.UrlEncode(serviceJson)}&core={HttpUtility.UrlEncode(coreJson)}", true);
+                                context.Response.Redirect($"{successUrl}?culture={user.Language.Name}&result={HttpUtility.UrlEncode(serviceJson)}&core={HttpUtility.UrlEncode(coreJson)}", true);
                                 return;
                             }
                             else
