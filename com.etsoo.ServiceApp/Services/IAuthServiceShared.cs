@@ -94,9 +94,17 @@ namespace com.etsoo.ServiceApp.Services
         /// </summary>
         /// <param name="accessor">HTTP accessor</param>
         /// <param name="rq">Request data</param>
-        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        ValueTask<IActionResult> RefreshTokenAsync(IHttpContextAccessor accessor, RefreshTokenRQ rq, CancellationToken cancellationToken);
+        ValueTask<IActionResult> RefreshTokenAsync(IHttpContextAccessor accessor, RefreshTokenRQ rq);
+
+        /// <summary>
+        /// Refresh token, only for the service application
+        /// 刷新令牌，仅用于服务应用
+        /// </summary>
+        /// <param name="context">HTTP context</param>
+        /// <param name="rq">Request data</param>
+        /// <returns>Result</returns>
+        ValueTask<IActionResult> RefreshTokenAsync(HttpContext context, RefreshTokenRQ rq);
 
         /// <summary>
         /// Refresh the token with result
@@ -142,18 +150,16 @@ namespace com.etsoo.ServiceApp.Services
         /// 从OAuth2客户端登录
         /// </summary>
         /// <param name="context">OAuth2 Request HTTPContext</param>
-        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Action result & current user & Token data & login data</returns>
-        ValueTask<(IActionResult result, CurrentUser? user, AppTokenData? tokenData, AuthLoginValidateData? data)> LogInAsync(HttpContext context, CancellationToken cancellationToken = default);
+        ValueTask<(IActionResult result, CurrentUser? user, AppTokenData? tokenData, AuthLoginValidateData? data)> LogInAsync(HttpContext context);
 
         /// <summary>
         /// Log in from OAuth2 client and authorized
         /// 从OAuth2客户端登录并授权
         /// </summary>
         /// <param name="context">OAuth2 Request HTTPContext</param>
-        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Action result & current user & login data</returns>
-        ValueTask AuthLogInAsync(HttpContext context, CancellationToken cancellationToken = default);
+        ValueTask AuthLogInAsync(HttpContext context);
 
         /// <summary>
         /// Refresh API token
@@ -196,10 +202,9 @@ namespace com.etsoo.ServiceApp.Services
         /// Switch organization
         /// 机构切换
         /// </summary>
-        /// <param name="accessor">HTTP accessor</param>
+        /// <param name="context">HTTP context</param>
         /// <param name="rq">Request data</param>
-        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result & new refresh token</returns>
-        Task<IActionResult> SwitchOrgAsync(IHttpContextAccessor accessor, SwitchOrgRQ rq, CancellationToken cancellationToken = default);
+        Task<IActionResult> SwitchOrgAsync(HttpContext context, SwitchOrgRQ rq);
     }
 }

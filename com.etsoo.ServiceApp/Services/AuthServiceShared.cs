@@ -234,7 +234,10 @@ namespace com.etsoo.ServiceApp.Services
             var vr = rq.Validate();
             if (vr != null && !vr.Ok)
             {
-                Logger.LogError("CreateTokenAsync failed with validation: {result}", vr);
+                if (Logger.IsEnabled(LogLevel.Error))
+                {
+                    Logger.LogError("CreateTokenAsync failed with validation: {result}", vr);
+                }
                 return null;
             }
 
@@ -249,9 +252,12 @@ namespace com.etsoo.ServiceApp.Services
             }
             catch
             {
-                // Log the response content
-                var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                Logger.LogError("CreateTokenAsync failed with response: {content}", content);
+                if (Logger.IsEnabled(LogLevel.Error))
+                {
+                    // Log the response content
+                    var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                    Logger.LogError("CreateTokenAsync failed with response: {content}", content);
+                }
 
                 throw;
             }
@@ -265,13 +271,25 @@ namespace com.etsoo.ServiceApp.Services
         /// </summary>
         /// <param name="accessor">HTTP accessor</param>
         /// <param name="rq">Request data</param>
-        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async ValueTask<IActionResult> RefreshTokenAsync(IHttpContextAccessor accessor, RefreshTokenRQ rq, CancellationToken cancellationToken)
+        public ValueTask<IActionResult> RefreshTokenAsync(IHttpContextAccessor accessor, RefreshTokenRQ rq)
+        {
+            var context = accessor.HttpContext ?? throw new BadHttpRequestException("No HttpContext");
+            return RefreshTokenAsync(context, rq);
+        }
+
+        /// <summary>
+        /// Refresh token, only for the service application
+        /// 刷新令牌，仅用于服务应用
+        /// </summary>
+        /// <param name="accessor">HTTP accessor</param>
+        /// <param name="rq">Request data</param>
+        /// <returns>Result</returns>
+        public async ValueTask<IActionResult> RefreshTokenAsync(HttpContext context, RefreshTokenRQ rq)
         {
             // Token
             string? token;
-            if (accessor.HttpContext?.Request.Headers.TryGetValue(Constants.RefreshTokenHeaderName, out var value) is true)
+            if (context.Request.Headers.TryGetValue(Constants.RefreshTokenHeaderName, out var value) is true)
             {
                 token = value.ToString();
             }
@@ -288,16 +306,16 @@ namespace com.etsoo.ServiceApp.Services
             var data = new RefreshTokenData
             {
                 DeviceId = rq.DeviceId,
-                UserAgent = accessor.UserAgent(),
+                UserAgent = context.UserAgent,
                 Token = token,
                 TimeZone = rq.TimeZone
             };
 
-            var (result, newRefeshToken) = await RefreshTokenAsync(data, cancellationToken);
+            var (result, newRefeshToken) = await RefreshTokenAsync(data, context.RequestAborted);
 
             if (result.Ok && newRefeshToken != null)
             {
-                MinimalApiUtils.OutputRefreshToken(accessor, newRefeshToken);
+                MinimalApiUtils.OutputRefreshToken(context.Response, newRefeshToken);
             }
 
             return result;
@@ -336,9 +354,12 @@ namespace com.etsoo.ServiceApp.Services
                 }
                 catch
                 {
-                    // Log the response content
-                    var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                    Logger.LogError("RefreshTokenAsync failed with response: {content}", content);
+                    if (Logger.IsEnabled(LogLevel.Error))
+                    {
+                        // Log the response content
+                        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                        Logger.LogError("RefreshTokenAsync failed with response: {content}", content);
+                    }
 
                     throw;
                 }
@@ -385,9 +406,12 @@ namespace com.etsoo.ServiceApp.Services
                 }
                 catch
                 {
-                    // Log the response content
-                    var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                    Logger.LogError("RefreshTokenResultAsync failed with response: {content}", content);
+                    if (Logger.IsEnabled(LogLevel.Error))
+                    {
+                        // Log the response content
+                        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                        Logger.LogError("RefreshTokenResultAsync failed with response: {content}", content);
+                    }
 
                     throw;
                 }
@@ -429,7 +453,7 @@ namespace com.etsoo.ServiceApp.Services
                 var (cp, _) = _authService.ValidateIdToken(tokenData.IdToken, App.Configuration.AppSecret);
                 var user = CurrentUser.Create(cp, out var reason);
 
-                if (user == null)
+                if (user == null && Logger.IsEnabled(LogLevel.Error))
                 {
                     Logger.LogError("Failed to create user: {reason}", reason);
                 }
@@ -452,9 +476,12 @@ namespace com.etsoo.ServiceApp.Services
                 }
                 catch
                 {
-                    // Log the response content
-                    var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                    Logger.LogError("GetUserInfoAsync failed with response: {content}", content);
+                    if (Logger.IsEnabled(LogLevel.Error))
+                    {
+                        // Log the response content
+                        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                        Logger.LogError("GetUserInfoAsync failed with response: {content}", content);
+                    }
 
                     throw;
                 }
@@ -739,11 +766,10 @@ namespace com.etsoo.ServiceApp.Services
         /// 从OAuth2客户端登录
         /// </summary>
         /// <param name="context">OAuth2 Request HTTPContext</param>
-        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Action result & current user & Token data & login data</returns>
-        public async ValueTask<(IActionResult result, CurrentUser? user, AppTokenData? tokenData, AuthLoginValidateData? data)> LogInAsync(HttpContext context, CancellationToken cancellationToken = default)
+        public async ValueTask<(IActionResult result, CurrentUser? user, AppTokenData? tokenData, AuthLoginValidateData? data)> LogInAsync(HttpContext context)
         {
-            var parser = new UAParser(context.UserAgent());
+            var parser = new UAParser(context.UserAgent);
             string? region = null;
             string? deviceId = null;
             CurrentUser? user = null;
@@ -774,11 +800,11 @@ namespace com.etsoo.ServiceApp.Services
                 {
                     return false;
                 }
-            }, AuthExtentions.LogInAction, cancellationToken);
+            }, AuthExtentions.LogInAction, context.RequestAborted);
 
             if (result.Ok && tokenData != null)
             {
-                user = await GetUserInfoAsync(tokenData, cancellationToken);
+                user = await GetUserInfoAsync(tokenData, context.RequestAborted);
                 if (user == null)
                 {
                     result = new ActionResult
@@ -819,15 +845,14 @@ namespace com.etsoo.ServiceApp.Services
         /// 从OAuth2客户端登录并授权
         /// </summary>
         /// <param name="context">OAuth2 Request HTTPContext</param>
-        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Action result & current user & login data</returns>
-        public async ValueTask AuthLogInAsync(HttpContext context, CancellationToken cancellationToken = default)
+        public async ValueTask AuthLogInAsync(HttpContext context)
         {
-            if (MinimalApiUtils.CheckDevice(context.UserAgent(), out var result, out var parser))
+            if (MinimalApiUtils.CheckDevice(context.UserAgent, out var result, out var parser))
             {
                 try
                 {
-                    var (loginResult, user, tokenData, _) = await LogInAsync(context, cancellationToken);
+                    var (loginResult, user, tokenData, _) = await LogInAsync(context);
 
                     if (loginResult.Ok)
                     {
@@ -842,7 +867,7 @@ namespace com.etsoo.ServiceApp.Services
                         else
                         {
                             // Create the results
-                            var (service, core, serviceRefreshToken) = await EnrichUserResultsAsync(user, tokenData, cancellationToken);
+                            var (service, core, serviceRefreshToken) = await EnrichUserResultsAsync(user, tokenData, context.RequestAborted);
 
                             if (service.Ok)
                             {
@@ -1151,17 +1176,16 @@ namespace com.etsoo.ServiceApp.Services
         /// Switch organization
         /// 机构切换
         /// </summary>
-        /// <param name="accessor">HTTP accessor</param>
+        /// <param name="context">HTTP context</param>
         /// <param name="rq">Request data</param>
-        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result & new refresh token</returns>
-        public virtual async Task<IActionResult> SwitchOrgAsync(IHttpContextAccessor accessor, SwitchOrgRQ rq, CancellationToken cancellationToken = default)
+        public virtual async Task<IActionResult> SwitchOrgAsync(HttpContext context, SwitchOrgRQ rq)
         {
-            var (result, newRefeshToken) = await SwitchOrgAsync(rq, cancellationToken);
+            var (result, newRefeshToken) = await SwitchOrgAsync(rq, context.RequestAborted);
 
             if (result.Ok && newRefeshToken != null)
             {
-                MinimalApiUtils.OutputRefreshToken(accessor, newRefeshToken);
+                MinimalApiUtils.OutputRefreshToken(context.Response, newRefeshToken);
             }
 
             return result;
@@ -1208,9 +1232,12 @@ namespace com.etsoo.ServiceApp.Services
                 }
                 catch
                 {
-                    // Log the response content
-                    var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                    Logger.LogError("SwitchOrgAsync failed with response: {content}", content);
+                    if (Logger.IsEnabled(LogLevel.Error))
+                    {
+                        // Log the response content
+                        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                        Logger.LogError("SwitchOrgAsync failed with response: {content}", content);
+                    }
 
                     throw;
                 }

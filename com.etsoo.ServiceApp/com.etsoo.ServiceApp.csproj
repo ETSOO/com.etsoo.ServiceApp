@@ -4,20 +4,20 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	  <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
-	  <Version>1.3.21</Version>
-	  <Authors>ETSOO SmartERP NextGen Team</Authors>
-	  <Company>ETSOO / 亿速思维</Company>
-	  <Description>ETSOO Service Application Framework
+	<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+	<Version>1.3.22</Version>
+	<Authors>ETSOO SmartERP NextGen Team</Authors>
+	<Company>ETSOO / 亿速思维</Company>
+	<Description>ETSOO Service Application Framework
 亿速思维服务应用框架</Description>
-	  <Copyright>Copyright © ETSOO 2004 - 2026</Copyright>
-	  <PackageProjectUrl>https://www.etsoo.com/SmartERP/</PackageProjectUrl>
-	  <PackageIcon>logo.png</PackageIcon>
-	  <RepositoryType></RepositoryType>
-	  <RepositoryUrl>https://github.com/ETSOO/com.etsoo.ServiceApp</RepositoryUrl>
-	  <SignAssembly>True</SignAssembly>
-	  <AssemblyOriginatorKeyFile>etsoo.snk</AssemblyOriginatorKeyFile>
-	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
+	<Copyright>Copyright © ETSOO 2004 - 2026</Copyright>
+	<PackageProjectUrl>https://www.etsoo.com/SmartERP/</PackageProjectUrl>
+	<PackageIcon>logo.png</PackageIcon>
+	<RepositoryType></RepositoryType>
+	<RepositoryUrl>https://github.com/ETSOO/com.etsoo.ServiceApp</RepositoryUrl>
+	<SignAssembly>True</SignAssembly>
+	<AssemblyOriginatorKeyFile>etsoo.snk</AssemblyOriginatorKeyFile>
+	<PackageLicenseExpression>MIT</PackageLicenseExpression>
     <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="com.etsoo.Web" Version="1.3.66" />
+    <PackageReference Include="com.etsoo.Web" Version="1.3.68" />
   </ItemGroup>
 
 </Project>
