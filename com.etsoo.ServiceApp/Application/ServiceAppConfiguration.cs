@@ -15,66 +15,66 @@ namespace com.etsoo.ServiceApp.Application
         /// 程序网页地址
         /// </summary>
         [Url]
-        public string AppWebUrl { get; set; } = "http://localhost";
+        public string AppWebUrl { get; init; } = "http://localhost";
 
         /// <summary>
         /// Application Api url
         /// 程序接口地址
         /// </summary>
         [Url]
-        public string AppApiUrl { get; set; } = "http://localhost/api";
+        public string AppApiUrl { get; init; } = "http://localhost/api";
 
         /// <summary>
         /// Application id
         /// 程序编号
         /// </summary>
         [Required]
-        public int AppId { get; set; }
+        public int AppId { get; init; }
 
         /// <summary>
         /// Application key
         /// 程序键名
         /// </summary>
-        public string AppKey { get; set; } = string.Empty;
+        public string AppKey { get; init; } = string.Empty;
 
         /// <summary>
         /// Application secret
         /// 程序密钥
         /// </summary>
         [Required]
-        public string AppSecret { get; set; } = default!;
+        public string AppSecret { get; init; } = default!;
 
         /// <summary>
         /// Permission scopes, space-delimited
         /// 权限范围，空格分隔
         /// </summary>
-        public string Scopes { get; set; } = "core";
+        public string Scopes { get; init; } = "core";
 
         /// <summary>
         /// Authorized redirect URIs for the server side application
         /// </summary>
         [Url]
-        public string? ServerRedirectUrl { get; set; }
+        public string? ServerRedirectUrl { get; init; }
 
         /// <summary>
         /// Authorized redirect URIs for the script side application
         /// </summary>
         [Url]
-        public string? ScriptRedirectUrl { get; set; }
+        public string? ScriptRedirectUrl { get; init; }
 
         /// <summary>
         /// Authorization failure URL
         /// 授权失败地址
         /// </summary>
         [Url]
-        public string? AuthFailureUrl { get; set; }
+        public string? AuthFailureUrl { get; init; }
 
         /// <summary>
         /// Authorization success URL
         /// 授权成功地址
         /// </summary>
         [Url]
-        public string? AuthSuccessUrl { get; set; }
+        public string? AuthSuccessUrl { get; init; }
     }
 
     [OptionsValidator]
