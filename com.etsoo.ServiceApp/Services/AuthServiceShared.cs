@@ -14,10 +14,12 @@ using com.etsoo.WebUtils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Data.Common;
+using System.IO.Pipelines;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Web;
 
 namespace com.etsoo.ServiceApp.Services
@@ -37,6 +39,11 @@ namespace com.etsoo.ServiceApp.Services
 
         readonly CoreFramework.Authentication.IAuthService _authService;
         readonly IHttpClientFactory _clientFactory;
+
+        /// <summary>
+        /// User action result type info
+        /// </summary>
+        protected virtual JsonTypeInfo<ActionResult> ActionResultTypeInfo { get; } = CommonJsonSerializerContext.Default.ActionResult;
 
         /// <summary>
         /// Constructor
@@ -830,14 +837,28 @@ namespace com.etsoo.ServiceApp.Services
         }
 
         /// <summary>
-        /// Serialize user data
-        /// 序列号用户数据
+        /// Serialize user result data
+        /// 序列号用户结果数据
         /// </summary>
+        /// <param name="writer">Writer</param>
         /// <param name="result">Action result</param>
-        /// <returns>Result</returns>
-        protected virtual string SerializeUser(ActionResult result)
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Task</returns>
+        public virtual Task SerializeUserResultAsync(PipeWriter writer, IActionResult result, CancellationToken cancellationToken = default)
         {
-            return JsonSerializer.Serialize(result, CommonJsonSerializerContext.Default.ActionResult);
+            return JsonSerializer.SerializeAsync(writer, result, ActionResultTypeInfo, cancellationToken);
+        }
+
+        /// <summary>
+        /// Write user result to HTTP context
+        /// 把用户操作结果写入HTTP上下文
+        /// </summary>
+        /// <param name="context">HTTP context</param>
+        /// <param name="result">Result</param>
+        /// <returns>Task</returns
+        public Task WriteUserResultAsync(HttpContext context, IActionResult result)
+        {
+            return SerializeUserResultAsync(context.Response.GetJsonWriter(), result, context.RequestAborted);
         }
 
         /// <summary>
@@ -883,7 +904,11 @@ namespace com.etsoo.ServiceApp.Services
                                 service.Data["Passphrase"] = passphrase;
                                 service.Data["ClientDeviceId"] = deviceId;
 
-                                var serviceJson = SerializeUser(service);
+                                await using var ms = SharedUtils.GetStream();
+                                var pipeWriter = PipeWriter.Create(ms);
+                                await SerializeUserResultAsync(pipeWriter, service, context.RequestAborted);
+                                var serviceJson = Encoding.UTF8.GetString(ms.GetReadOnlySequence());
+
                                 var coreJson = core == null ? string.Empty : JsonSerializer.Serialize(core, ModelJsonSerializerContext.Default.ApiTokenData);
 
                                 // Redirect to the success URL

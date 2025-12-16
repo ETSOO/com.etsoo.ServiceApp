@@ -5,6 +5,7 @@ using com.etsoo.CoreFramework.User;
 using com.etsoo.Utils.Actions;
 using com.etsoo.Web;
 using Microsoft.AspNetCore.Http;
+using System.IO.Pipelines;
 
 namespace com.etsoo.ServiceApp.Services
 {
@@ -181,6 +182,16 @@ namespace com.etsoo.ServiceApp.Services
         ValueTask<ApiTokenData?> ExchangeTokenAsync(string token, string timeZone, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Serialize user result data
+        /// 序列号用户结果数据
+        /// </summary>
+        /// <param name="writer">Writer</param>
+        /// <param name="result">Action result</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Task</returns>
+        Task SerializeUserResultAsync(PipeWriter writer, IActionResult result, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Sign out
         /// 退出
         /// </summary>
@@ -206,5 +217,14 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="rq">Request data</param>
         /// <returns>Result & new refresh token</returns>
         Task<IActionResult> SwitchOrgAsync(HttpContext context, SwitchOrgRQ rq);
+
+        /// <summary>
+        /// Write user result to HTTP context
+        /// 把用户操作结果写入HTTP上下文
+        /// </summary>
+        /// <param name="context">HTTP context</param>
+        /// <param name="result">Result</param>
+        /// <returns>Task</returns>
+        Task WriteUserResultAsync(HttpContext context, IActionResult result);
     }
 }

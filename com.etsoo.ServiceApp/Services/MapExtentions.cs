@@ -79,7 +79,7 @@ namespace com.etsoo.ServiceApp.Services
                 var rq = await context.GetJsonAsync<RefreshTokenRQ>();
                 var service = context.GetService();
                 var result = await service.RefreshTokenAsync(context, rq);
-                await result.ExecuteAsync(context);
+                await service.WriteUserResultAsync(context, result);
             }).WithDescription("Refresh token / 刷新令牌");
 
             g.MapPut("Signout", async (context) =>
@@ -112,7 +112,7 @@ namespace com.etsoo.ServiceApp.Services
                 var service = context.GetService();
                 var rq = await context.GetJsonAsync<SwitchOrgRQ>();
                 var result = await service.SwitchOrgAsync(context, rq);
-                await result.ExecuteAsync(context);
+                await service.WriteUserResultAsync(context, result);
             }).RequireAuthorization().WithDescription("Switch organization / 切换机构");
 
             return builder;
