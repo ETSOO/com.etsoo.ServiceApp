@@ -286,26 +286,26 @@ namespace com.etsoo.ServiceApp.Services
         }
 
         /// <summary>
-        /// Refresh token, only for the service application
-        /// 刷新令牌，仅用于服务应用
+        /// Refresh token, application side
+        /// 刷新令牌，应用端
         /// </summary>
         /// <param name="accessor">HTTP accessor</param>
         /// <param name="rq">Request data</param>
         /// <returns>Result</returns>
-        public async ValueTask<IActionResult> RefreshTokenAsync(HttpContext context, RefreshTokenRQ rq)
+        public virtual async ValueTask<IActionResult> RefreshTokenAsync(HttpContext context, RefreshTokenRQ rq)
         {
             // Token
             string? token;
-            if (context.Request.Headers.TryGetValue(Constants.RefreshTokenHeaderName, out var value) is true)
+            if (context.Request.Headers.TryGetValue(Constants.RefreshTokenHeaderName, out var value))
             {
                 token = value.ToString();
             }
             else
             {
-                return ApplicationErrors.NoValidData.AsResult("Token");
+                return ApplicationErrors.ItemNotExists.AsResult("Token");
             }
 
-            if (string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token) || token.Length < 64)
             {
                 return ApplicationErrors.NoValidData.AsResult("Token");
             }
@@ -329,14 +329,14 @@ namespace com.etsoo.ServiceApp.Services
         }
 
         /// <summary>
-        /// Refresh the token
-        /// 刷新访问令牌
+        /// Refresh the token, server side
+        /// 刷新访问令牌，服务器端
         /// </summary>
         /// <param name="refreshToken">Refresh token</param>
         /// <param name="timeZone">Time zone</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async Task<AppTokenData?> RefreshTokenAsync(string refreshToken, string timeZone, CancellationToken cancellationToken = default)
+        public virtual async Task<AppTokenData?> RefreshTokenAsync(string refreshToken, string timeZone, CancellationToken cancellationToken = default)
         {
             var rq = new AuthRefreshTokenRQ
             {
@@ -453,7 +453,7 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="tokenData">Token data</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async ValueTask<CurrentUser?> GetUserInfoAsync(AppTokenData tokenData, CancellationToken cancellationToken = default)
+        public virtual async ValueTask<CurrentUser?> GetUserInfoAsync(AppTokenData tokenData, CancellationToken cancellationToken = default)
         {
             if (!string.IsNullOrEmpty(tokenData.IdToken))
             {
@@ -563,7 +563,7 @@ namespace com.etsoo.ServiceApp.Services
         /// <param name="action">Request action</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Action result & Token data & actual state</returns>
-        public async Task<(IActionResult result, AppTokenData? tokenData, string? state)> ValidateAuthAsync(HttpRequest request, Func<string, bool> stateCallback, string? action = null, CancellationToken cancellationToken = default)
+        public virtual async Task<(IActionResult result, AppTokenData? tokenData, string? state)> ValidateAuthAsync(HttpRequest request, Func<string, bool> stateCallback, string? action = null, CancellationToken cancellationToken = default)
         {
             IActionResult result;
             AppTokenData? tokenData = null;
@@ -867,7 +867,7 @@ namespace com.etsoo.ServiceApp.Services
         /// </summary>
         /// <param name="context">OAuth2 Request HTTPContext</param>
         /// <returns>Action result & current user & login data</returns>
-        public async ValueTask AuthLogInAsync(HttpContext context)
+        public virtual async ValueTask AuthLogInAsync(HttpContext context)
         {
             if (MinimalApiUtils.CheckDevice(context.UserAgent, out var result, out var parser))
             {
@@ -960,7 +960,7 @@ namespace com.etsoo.ServiceApp.Services
 
             if (string.IsNullOrEmpty(token))
             {
-                return (ApplicationErrors.NoValidData.AsResult("Token"), null);
+                return (ApplicationErrors.DataProcessingFailed.AsResult("Token"), null);
             }
 
             var rq = new ApiRefreshTokenRQ
