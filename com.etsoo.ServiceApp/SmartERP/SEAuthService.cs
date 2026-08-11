@@ -10,10 +10,17 @@ namespace com.etsoo.ServiceApp.SmartERP
     /// SmartERP Service Application authorization service
     /// 司友云ERP服务程序授权服务
     /// </summary>
-    public class SEAuthService : AuthServiceShared<ServiceAppConfiguration, NpgsqlConnection, ISEServiceApp, CurrentUser>, ISEAuthService
+    /// <typeparam name="C">Generic configuration type</typeparam>
+    public class SEAuthService<C> : AuthServiceShared<NpgsqlConnection, ISEServiceApp<C>, CurrentUser>, ISEAuthService
+        where C : ServiceAppConfiguration
     {
-        public SEAuthService(ISEServiceApp app, CurrentUserAccessor userAccessor, ILogger<SEAuthService> logger, IHttpClientFactory clientFactory)
-            : base(app, userAccessor, logger, clientFactory)
+        public SEAuthService(
+            ISEServiceApp<C> app,
+            CurrentUserAccessor userAccessor,
+            ILogger<SEAuthService<C>> logger,
+            IHttpClientFactory clientFactory,
+            CoreFramework.Authentication.IAuthService authService
+        ) : base(app, userAccessor, logger, clientFactory, authService)
         {
         }
     }

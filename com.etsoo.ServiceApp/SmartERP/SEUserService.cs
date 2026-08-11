@@ -1,4 +1,5 @@
 ﻿using com.etsoo.CoreFramework.User;
+using com.etsoo.ServiceApp.Application;
 using Microsoft.Extensions.Logging;
 
 namespace com.etsoo.ServiceApp.SmartERP
@@ -7,7 +8,9 @@ namespace com.etsoo.ServiceApp.SmartERP
     /// SmartERP Service Application Common user service
     /// 司友云ERP服务程序通用用户服务
     /// </summary>
-    public abstract class SEUserService : SEService, ISEUserService
+    /// <typeparam name="C">Generic configuration type</typeparam>
+    public abstract class SEUserService<C> : SEService<C>, ISEUserService
+        where C : ServiceAppConfiguration
     {
         /// <summary>
         /// Current user
@@ -15,7 +18,7 @@ namespace com.etsoo.ServiceApp.SmartERP
         /// </summary>
         protected override CurrentUser User { get; }
 
-        protected SEUserService(ISEServiceApp app, CurrentUser user, string flag, ILogger logger)
+        protected SEUserService(ISEServiceApp<C> app, CurrentUser user, string flag, ILogger<SEUserService<C>> logger)
             : base(app, user, flag, logger)
         {
             User = user;

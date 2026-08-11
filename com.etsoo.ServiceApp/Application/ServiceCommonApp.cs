@@ -1,14 +1,11 @@
 ﻿using com.etsoo.CoreFramework.Application;
-using com.etsoo.CoreFramework.Authentication;
 using com.etsoo.CoreFramework.Models;
 using com.etsoo.CoreFramework.User;
 using com.etsoo.Database;
 using com.etsoo.Utils;
 using com.etsoo.Utils.Crypto;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace com.etsoo.ServiceApp.Application
@@ -18,16 +15,10 @@ namespace com.etsoo.ServiceApp.Application
     /// 通用服务程序
     /// </summary>
     /// <typeparam name="C">Generic database type</typeparam>
-    public abstract class ServiceCommonApp<S, C> : CoreApplication<S, C>, IServiceBaseApp<S, C>
+    public abstract class ServiceCommonApp<S, C> : CoreApplication<S, C>, IServiceApp<S, C>
         where S : ServiceAppConfiguration
         where C : DbConnection
     {
-        /// <summary>
-        /// Authentication service
-        /// 验证服务
-        /// </summary>
-        public IAuthService? AuthService { get; init; }
-
         /// <summary>
         /// Constructor
         /// 构造函数
@@ -38,13 +29,9 @@ namespace com.etsoo.ServiceApp.Application
         /// <param name="jwtSettings">JWT settings</param>
         /// <param name="events">Events</param>
         /// <param name="modelValidated">Is model validated</param>
-        public ServiceCommonApp(IServiceCollection services, S configuration, IDatabase<C> db, JwtSettings? jwtSettings, JwtBearerEvents? events = null, bool modelValidated = false)
+        public ServiceCommonApp(IServiceCollection services, S configuration, IDatabase<C> db, bool modelValidated = false)
             : base(configuration, db, modelValidated)
         {
-            if (jwtSettings != null)
-            {
-                AuthService = new JwtService(services, jwtSettings, events);
-            }
         }
 
         public override void AddSystemParameters(IUserToken user, IDbParameters parameters)
@@ -73,21 +60,6 @@ namespace com.etsoo.ServiceApp.Application
         public string ExchangeData(string plainText)
         {
             return CryptographyUtils.AESEncrypt(plainText, GetExchangeKey(), 10);
-        }
-
-        /// <summary>
-        /// Async exchange object data encryption
-        /// 异步交换对象数据加密
-        /// </summary>
-        /// <typeparam name="T">Generic object type</typeparam>
-        /// <param name="obj">Object</param>
-        /// <returns>Result</returns>
-        [RequiresDynamicCode("ExchangeDataAsync 'T' may require dynamic access otherwise can break functionality when trimming application code")]
-        [RequiresUnreferencedCode("ExchangeDataAsync 'T' may require dynamic access otherwise can break functionality when trimming application code")]
-        public async Task<string> ExchangeDataAsync<T>(T obj)
-        {
-            var json = await SharedUtils.JsonSerializeAsync(obj, SharedUtils.JsonDefaultSerializerOptions);
-            return ExchangeData(json);
         }
 
         /// <summary>

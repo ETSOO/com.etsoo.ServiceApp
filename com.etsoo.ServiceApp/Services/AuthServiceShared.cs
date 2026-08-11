@@ -29,10 +29,9 @@ namespace com.etsoo.ServiceApp.Services
     /// 共享的授权服务
     /// </summary>
     /// <typeparam name="A">Generic application</typeparam>
-    public class AuthServiceShared<S, C, A, U> : ServiceBase<S, C, A, U>, IAuthServiceShared
-        where S : ServiceAppConfiguration
+    public class AuthServiceShared<C, A, U> : ServiceBase<A, U>, IAuthServiceShared
         where C : DbConnection
-        where A : IServiceBaseApp<S, C>
+        where A : IServiceApp<ServiceAppConfiguration, C>
         where U : ICurrentUser, IUserCreator<U>
     {
         const string BearerTokenType = "Bearer";
@@ -50,15 +49,20 @@ namespace com.etsoo.ServiceApp.Services
         /// 构造函数
         /// </summary>
         /// <param name="app">Application</param>
+        /// <param name="userAccessor">User accessor</param>
         /// <param name="logger">Logger</param>
-        /// <param name="accessor">Http context accessor</param>
-        public AuthServiceShared(A app, IUserAccessor<U> userAccessor, ILogger<AuthServiceShared<S, C, A, U>> logger, IHttpClientFactory clientFactory)
-            : base(app, userAccessor.User, "auth", logger)
+        /// <param name="clientFactory">HTTP client factory</param>
+        /// <param name="authService">Authentication service</param>
+        public AuthServiceShared(
+            A app,
+            IUserAccessor<U> userAccessor,
+            ILogger<AuthServiceShared<C, A, U>> logger,
+            IHttpClientFactory clientFactory,
+            CoreFramework.Authentication.IAuthService authService
+        ) : base(app, userAccessor.User, "auth", logger)
         {
-            if (app.AuthService == null) throw new NullReferenceException(nameof(app.AuthService));
-            _authService = app.AuthService;
-
             _clientFactory = clientFactory;
+            _authService = authService;
         }
 
         /// <summary>
