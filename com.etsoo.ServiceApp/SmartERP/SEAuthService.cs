@@ -1,4 +1,5 @@
-﻿using com.etsoo.CoreFramework.User;
+﻿using com.etsoo.CoreFramework.Authentication;
+using com.etsoo.CoreFramework.User;
 using com.etsoo.ServiceApp.Application;
 using com.etsoo.ServiceApp.Services;
 using Microsoft.Extensions.Logging;
@@ -11,14 +12,15 @@ namespace com.etsoo.ServiceApp.SmartERP
     /// 司友云ERP服务程序授权服务
     /// </summary>
     /// <typeparam name="C">Generic configuration type</typeparam>
-    public class SEAuthService : AuthServiceShared<NpgsqlConnection, ISEServiceApp<ServiceAppConfiguration>, CurrentUser>, ISEAuthService
+    public class SEAuthService<C> : AuthServiceShared<NpgsqlConnection, ISEServiceApp<C>, CurrentUser>, ISEAuthService
+        where C : ServiceAppConfiguration
     {
         public SEAuthService(
-            ISEServiceApp<ServiceAppConfiguration> app,
+            ISEServiceApp<C> app,
             CurrentUserAccessor userAccessor,
-            ILogger<SEAuthService> logger,
+            ILogger<SEAuthService<C>> logger,
             IHttpClientFactory clientFactory,
-            CoreFramework.Authentication.IAuthService authService
+            IAuthService authService
         ) : base(app, userAccessor, logger, clientFactory, authService)
         {
         }
