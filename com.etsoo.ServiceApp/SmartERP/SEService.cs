@@ -9,12 +9,10 @@ namespace com.etsoo.ServiceApp.SmartERP
     /// SmartERP Service Application Common service
     /// 司友云ERP服务程序通用服务
     /// </summary>
-    /// <typeparam name="C">Generic configuration type</typeparam>
-    public abstract class SEService<C> : ServiceBase<ISEServiceApp<C>, CurrentUser>, ISEService
-        where C : ServiceAppConfiguration
+    public abstract class SEService : ServiceBase<ISEServiceApp, CurrentUser>, ISEService
     {
-        protected SEService(ISEServiceApp<C> app, CurrentUser? user, string flag, ILogger<SEService<C>> logger)
-            : base(app, user, flag, logger)
+        protected SEService(ISEServiceApp app, ServiceAppConfiguration configuration, CurrentUser? user, string flag, ILogger<SEService> logger)
+            : base(app, configuration, user, flag, logger)
         {
         }
     }

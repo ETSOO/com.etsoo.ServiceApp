@@ -9,12 +9,10 @@ namespace com.etsoo.ServiceApp.SmartERP
     /// SmartERP service application
     /// 司友云ERP服务程序
     /// </summary>
-    /// <typeparam name="C">Generic configuration type</typeparam>
-    public class SEServiceApp<C> : ServiceCommonApp<C, NpgsqlConnection>, ISEServiceApp<C>
-        where C : ServiceAppConfiguration
+    public class SEServiceApp : ServiceCommonApp<NpgsqlConnection>, ISEServiceApp
     {
-        public SEServiceApp(IServiceCollection services, C configuration, IDatabase<NpgsqlConnection> db, bool modelValidated = false, int? appId = null)
-            : base(services, configuration, db, modelValidated)
+        public SEServiceApp(IServiceCollection services, IDatabase<NpgsqlConnection> db, ServiceAppConfiguration configuration, bool modelValidated = false, int? appId = null)
+            : base(services, db, configuration, modelValidated)
         {
             if (appId.HasValue)
             {

@@ -8,9 +8,7 @@ namespace com.etsoo.ServiceApp.SmartERP
     /// SmartERP Service Application Common user service
     /// 司友云ERP服务程序通用用户服务
     /// </summary>
-    /// <typeparam name="C">Generic configuration type</typeparam>
-    public abstract class SEUserService<C> : SEService<C>, ISEUserService
-        where C : ServiceAppConfiguration
+    public abstract class SEUserService : SEService, ISEUserService
     {
         /// <summary>
         /// Current user
@@ -18,8 +16,8 @@ namespace com.etsoo.ServiceApp.SmartERP
         /// </summary>
         protected override CurrentUser User { get; }
 
-        protected SEUserService(ISEServiceApp<C> app, CurrentUser user, string flag, ILogger<SEUserService<C>> logger)
-            : base(app, user, flag, logger)
+        protected SEUserService(ISEServiceApp app, ServiceAppConfiguration configuration, CurrentUser user, string flag, ILogger<SEUserService> logger)
+            : base(app, configuration, user, flag, logger)
         {
             User = user;
         }

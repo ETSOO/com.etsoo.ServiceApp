@@ -15,23 +15,23 @@ namespace com.etsoo.ServiceApp.Application
     /// 通用服务程序
     /// </summary>
     /// <typeparam name="C">Generic database type</typeparam>
-    public abstract class ServiceCommonApp<S, C> : CoreApplication<S, C>, IServiceApp<S, C>
-        where S : ServiceAppConfiguration
+    public abstract class ServiceCommonApp<C> : CoreApplication<C>, IServiceApp<C>
         where C : DbConnection
     {
+        private readonly ServiceAppConfiguration _config;
+
         /// <summary>
         /// Constructor
         /// 构造函数
         /// </summary>
         /// <param name="services">Services</param>
-        /// <param name="configuration">Configuration</param>
         /// <param name="db">Database</param>
-        /// <param name="jwtSettings">JWT settings</param>
-        /// <param name="events">Events</param>
+        /// <param name="configuration">Configuration</param>
         /// <param name="modelValidated">Is model validated</param>
-        public ServiceCommonApp(IServiceCollection services, S configuration, IDatabase<C> db, bool modelValidated = false)
-            : base(configuration, db, modelValidated)
+        public ServiceCommonApp(IServiceCollection services, IDatabase<C> db, ServiceAppConfiguration configuration, bool modelValidated = false)
+            : base(db, configuration.PrivateKey, modelValidated)
         {
+            _config = configuration;
         }
 
         public override void AddSystemParameters(IUserToken user, IDbParameters parameters)
@@ -48,7 +48,7 @@ namespace com.etsoo.ServiceApp.Application
         /// <returns>Result</returns>
         public virtual string GetExchangeKey()
         {
-            return GetExchangeKey(Configuration.AppId, Configuration.AppSecret);
+            return GetExchangeKey(_config.AppId, _config.AppSecret);
         }
 
         /// <summary>
@@ -87,13 +87,13 @@ namespace com.etsoo.ServiceApp.Application
         {
             var data = new AppActionData
             {
-                AppId = Configuration.AppId,
-                AppKey = Configuration.AppKey,
+                AppId = _config.AppId,
+                AppKey = _config.AppKey,
                 Action = action,
                 TargetId = targetId
             };
 
-            data.Sign = data.SignWith(Configuration.AppSecret);
+            data.Sign = data.SignWith(_config.AppSecret);
 
             return data;
         }

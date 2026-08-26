@@ -28,14 +28,17 @@ namespace com.etsoo.ServiceApp.Services
     /// Shared authorization service
     /// 共享的授权服务
     /// </summary>
+    /// <typeparam name="C">Generic database connection</typeparam>
     /// <typeparam name="A">Generic application</typeparam>
+    /// <typeparam name="U">Generic user</typeparam>
     public class AuthServiceShared<C, A, U> : ServiceBase<A, U>, IAuthServiceShared
         where C : DbConnection
-        where A : IServiceApp<ServiceAppConfiguration, C>
+        where A : IServiceApp<C>
         where U : ICurrentUser, IUserCreator<U>
     {
         const string BearerTokenType = "Bearer";
 
+        readonly ServiceAppConfiguration _configuration;
         readonly CoreFramework.Authentication.IAuthService _authService;
         readonly IHttpClientFactory _clientFactory;
 
@@ -49,18 +52,21 @@ namespace com.etsoo.ServiceApp.Services
         /// 构造函数
         /// </summary>
         /// <param name="app">Application</param>
+        /// <param name="configuration">Configuration</param>
         /// <param name="userAccessor">User accessor</param>
         /// <param name="logger">Logger</param>
         /// <param name="clientFactory">HTTP client factory</param>
         /// <param name="authService">Authentication service</param>
         public AuthServiceShared(
             A app,
+            ServiceAppConfiguration configuration,
             IUserAccessor<U> userAccessor,
             ILogger<AuthServiceShared<C, A, U>> logger,
             IHttpClientFactory clientFactory,
             CoreFramework.Authentication.IAuthService authService
-        ) : base(app, userAccessor.User, "auth", logger)
+        ) : base(app, configuration, userAccessor.User, "auth", logger)
         {
+            _configuration = configuration;
             _clientFactory = clientFactory;
             _authService = authService;
         }
@@ -74,7 +80,7 @@ namespace com.etsoo.ServiceApp.Services
         /// <returns>URL</returns>
         public string GetLogInUrl(string state, string? loginHint = null)
         {
-            return GetServerAuthUrl(AuthExtentions.LogInAction, state, App.Configuration.Scopes, false, loginHint);
+            return GetServerAuthUrl(AuthExtentions.LogInAction, state, _configuration.Scopes, false, loginHint);
         }
 
         /// <summary>
@@ -85,7 +91,7 @@ namespace com.etsoo.ServiceApp.Services
         /// <returns>URL</returns>
         public string GetSignUpUrl(string state)
         {
-            return GetServerAuthUrl(AuthExtentions.SignUpAction, state, App.Configuration.Scopes);
+            return GetServerAuthUrl(AuthExtentions.SignUpAction, state, _configuration.Scopes);
         }
 
         /// <summary>
@@ -117,7 +123,7 @@ namespace com.etsoo.ServiceApp.Services
         public string GetServerAuthUrl(string action, string state, bool tokenResponse, string scope, bool offline = false, string? loginHint = null)
         {
             var responseType = tokenResponse ? AuthRequest.TokenResponseType : AuthRequest.CodeResponseType;
-            return GetAuthUrl($"{App.Configuration.ServerRedirectUrl}/{action}", responseType, scope, state, loginHint, offline ? AuthRequest.OfflineAccessType : null);
+            return GetAuthUrl($"{_configuration.ServerRedirectUrl}/{action}", responseType, scope, state, loginHint, offline ? AuthRequest.OfflineAccessType : null);
         }
 
         /// <summary>
@@ -134,7 +140,7 @@ namespace com.etsoo.ServiceApp.Services
         public AuthRequest GetServerAuthRequest(string action, string state, bool tokenResponse, string scope, bool offline = false, string? loginHint = null)
         {
             var responseType = tokenResponse ? AuthRequest.TokenResponseType : AuthRequest.CodeResponseType;
-            return GetAuthRequest($"{App.Configuration.ServerRedirectUrl}/{action}", responseType, scope, state, loginHint, offline ? AuthRequest.OfflineAccessType : null);
+            return GetAuthRequest($"{_configuration.ServerRedirectUrl}/{action}", responseType, scope, state, loginHint, offline ? AuthRequest.OfflineAccessType : null);
         }
 
         /// <summary>
@@ -148,7 +154,7 @@ namespace com.etsoo.ServiceApp.Services
         /// <returns>URL</returns>
         public string GetScriptAuthUrl(string action, string state, string scope, string? loginHint = null)
         {
-            return GetAuthUrl($"{App.Configuration.ScriptRedirectUrl}/{action}", AuthRequest.TokenResponseType, scope, state, loginHint, AuthRequest.OfflineAccessType);
+            return GetAuthUrl($"{_configuration.ScriptRedirectUrl}/{action}", AuthRequest.TokenResponseType, scope, state, loginHint, AuthRequest.OfflineAccessType);
         }
 
         /// <summary>
@@ -172,13 +178,13 @@ namespace com.etsoo.ServiceApp.Services
 
             // Encrypt the state
             // 加密状态
-            var encryptedState = CryptographyUtils.AESEncrypt(state, App.Configuration.AppSecret);
+            var encryptedState = CryptographyUtils.AESEncrypt(state, _configuration.AppSecret);
 
             var rq = new AuthRequest
             {
                 AccessType = accessType,
-                AppId = App.Configuration.AppId,
-                AppKey = App.Configuration.AppKey,
+                AppId = _configuration.AppId,
+                AppKey = _configuration.AppKey,
                 LoginHint = loginHint,
                 RedirectUri = uri,
                 ResponseType = responseType,
@@ -187,7 +193,7 @@ namespace com.etsoo.ServiceApp.Services
             };
 
             // Siganature
-            rq.Sign = rq.SignWith(App.Configuration.AppSecret);
+            rq.Sign = rq.SignWith(_configuration.AppSecret);
 
             // Return
             return rq;
@@ -213,7 +219,7 @@ namespace com.etsoo.ServiceApp.Services
             // Request data to JSON
             var jsonRQ = JsonSerializer.Serialize(rq, ModelJsonSerializerContext.Default.AuthRequest);
 
-            return $"{App.Configuration.WebUrl}?auth={HttpUtility.UrlEncode(jsonRQ)}";
+            return $"{_configuration.WebUrl}?auth={HttpUtility.UrlEncode(jsonRQ)}";
         }
 
         /// <summary>
@@ -226,21 +232,21 @@ namespace com.etsoo.ServiceApp.Services
         /// <returns>Token data</returns>
         public async ValueTask<AppTokenData?> CreateTokenAsync(string action, string code, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(App.Configuration.ServerRedirectUrl))
+            if (string.IsNullOrEmpty(_configuration.ServerRedirectUrl))
             {
                 throw new Exception("ServerRedirectUrl is required for server side authentication");
             }
 
             var rq = new AuthCreateTokenRQ
             {
-                AppId = App.Configuration.AppId,
-                AppKey = App.Configuration.AppKey,
+                AppId = _configuration.AppId,
+                AppKey = _configuration.AppKey,
                 Code = code,
-                RedirectUri = new Uri($"{App.Configuration.ServerRedirectUrl}/{action}", UriKind.Absolute)
+                RedirectUri = new Uri($"{_configuration.ServerRedirectUrl}/{action}", UriKind.Absolute)
             };
 
             // Siganature
-            rq.Sign = rq.SignWith(App.Configuration.AppSecret);
+            rq.Sign = rq.SignWith(_configuration.AppSecret);
 
             var vr = rq.Validate();
             if (vr != null && !vr.Ok)
@@ -252,7 +258,7 @@ namespace com.etsoo.ServiceApp.Services
                 return null;
             }
 
-            var api = $"{App.Configuration.ApiUrl}/Auth/OAuthCreateToken";
+            var api = $"{_configuration.ApiUrl}/Auth/OAuthCreateToken";
             var client = _clientFactory.CreateClient();
 
             using var response = await client.PostAsJsonAsync(api, rq, ModelJsonSerializerContext.Default.AuthCreateTokenRQ, cancellationToken);
@@ -344,18 +350,18 @@ namespace com.etsoo.ServiceApp.Services
         {
             var rq = new AuthRefreshTokenRQ
             {
-                AppId = App.Configuration.AppId,
-                AppKey = App.Configuration.AppKey,
+                AppId = _configuration.AppId,
+                AppKey = _configuration.AppKey,
                 RefreshToken = refreshToken,
                 TimeZone = timeZone
             };
 
             // Siganature
-            rq.Sign = rq.SignWith(App.Configuration.AppSecret);
+            rq.Sign = rq.SignWith(_configuration.AppSecret);
 
             try
             {
-                var api = $"{App.Configuration.ApiUrl}/Auth/OAuthRefreshToken";
+                var api = $"{_configuration.ApiUrl}/Auth/OAuthRefreshToken";
 
                 using var response = await _clientFactory.CreateClient().PostAsJsonAsync(api, rq, ModelJsonSerializerContext.Default.AuthRefreshTokenRQ, cancellationToken);
 
@@ -396,18 +402,18 @@ namespace com.etsoo.ServiceApp.Services
         {
             var rq = new AuthRefreshTokenRQ
             {
-                AppId = App.Configuration.AppId,
-                AppKey = App.Configuration.AppKey,
+                AppId = _configuration.AppId,
+                AppKey = _configuration.AppKey,
                 RefreshToken = refreshToken,
                 TimeZone = timeZone
             };
 
             // Siganature
-            rq.Sign = rq.SignWith(App.Configuration.AppSecret);
+            rq.Sign = rq.SignWith(_configuration.AppSecret);
 
             try
             {
-                var api = $"{App.Configuration.ApiUrl}/Auth/OAuthRefreshTokenResult";
+                var api = $"{_configuration.ApiUrl}/Auth/OAuthRefreshTokenResult";
 
                 using var response = await _clientFactory.CreateClient().PostAsJsonAsync(api, rq, ModelJsonSerializerContext.Default.AuthRefreshTokenRQ, cancellationToken);
 
@@ -461,7 +467,7 @@ namespace com.etsoo.ServiceApp.Services
         {
             if (!string.IsNullOrEmpty(tokenData.IdToken))
             {
-                var (cp, _) = _authService.ValidateIdToken(tokenData.IdToken, App.Configuration.AppSecret);
+                var (cp, _) = _authService.ValidateIdToken(tokenData.IdToken, _configuration.AppSecret);
                 var user = CurrentUser.Create(cp, out var reason);
 
                 if (user == null && Logger.IsEnabled(LogLevel.Error))
@@ -477,7 +483,7 @@ namespace com.etsoo.ServiceApp.Services
 
             try
             {
-                var api = $"{App.Configuration.ApiUrl}/Auth/OAuthUserInfo";
+                var api = $"{_configuration.ApiUrl}/Auth/OAuthUserInfo";
 
                 using var response = await client.GetAsync(api, cancellationToken);
 
@@ -716,12 +722,12 @@ namespace com.etsoo.ServiceApp.Services
 
             if (isUrl)
             {
-                var url = GetServerAuthUrl(AuthExtentions.LogInAction, deviceId, true, App.Configuration.Scopes, true);
+                var url = GetServerAuthUrl(AuthExtentions.LogInAction, deviceId, true, _configuration.Scopes, true);
                 return Results.Content(url, "text/plain");
             }
             else
             {
-                var rq = GetServerAuthRequest(AuthExtentions.LogInAction, deviceId, true, App.Configuration.Scopes, true);
+                var rq = GetServerAuthRequest(AuthExtentions.LogInAction, deviceId, true, _configuration.Scopes, true);
                 return Results.Json(rq, ModelJsonSerializerContext.Default.AuthRequest);
             }
         }
@@ -740,7 +746,7 @@ namespace com.etsoo.ServiceApp.Services
 
         private string CreateLoginState(string device, string region)
         {
-            return region + App.HashPassword(App.Configuration.AppId + device);
+            return region + App.HashPassword(_configuration.AppId + device);
         }
 
         /// <summary>
@@ -753,7 +759,7 @@ namespace com.etsoo.ServiceApp.Services
         public async ValueTask<IActionResult> ExchangeLoginStateAsync(LoginStateRQ rq, CancellationToken cancellationToken = default)
         {
             // Check signature
-            var expectedSignature = rq.SignWith(App.Configuration.AppSecret);
+            var expectedSignature = rq.SignWith(_configuration.AppSecret);
             if (!rq.Sign.Equals(expectedSignature))
             {
                 return ApplicationErrors.NoValidData.AsResult(nameof(rq.Sign));
@@ -767,7 +773,7 @@ namespace com.etsoo.ServiceApp.Services
             await Task.CompletedTask;
 
             var state = CreateLoginState(rq.Device, rq.Region);
-            var encryptedState = CryptographyUtils.AESEncrypt(rq.Timestamp + state, App.Configuration.AppSecret);
+            var encryptedState = CryptographyUtils.AESEncrypt(rq.Timestamp + state, _configuration.AppSecret);
 
             return ActionResult.Succeed(encryptedState);
         }
@@ -788,7 +794,7 @@ namespace com.etsoo.ServiceApp.Services
             var (result, tokenData, state) = await ValidateAuthAsync(context.Request, (es) =>
             {
                 // Decrypt the state
-                var bytes = CryptographyUtils.AESDecrypt(es, App.Configuration.AppSecret);
+                var bytes = CryptographyUtils.AESDecrypt(es, _configuration.AppSecret);
                 if (bytes == null || bytes.Length == 0)
                 {
                     return false;
@@ -902,7 +908,7 @@ namespace com.etsoo.ServiceApp.Services
                                 // Service passphrase
                                 // Passphrase is encrypted by front-end information for random string while the device id is encrypted by the parser data
                                 var randomChars = CryptographyUtils.CreateRandString(RandStringKind.All, 32).ToString();
-                                var passphraseKey = $"{user.Uid}-{App.Configuration.AppId}";
+                                var passphraseKey = $"{user.Uid}-{_configuration.AppId}";
                                 var passphrase = EncryptWeb(randomChars, passphraseKey);
                                 var deviceId = Encrypt(randomChars, parser.ToShortName());
                                 service.Data["Passphrase"] = passphrase;
@@ -916,7 +922,7 @@ namespace com.etsoo.ServiceApp.Services
                                 var coreJson = core == null ? string.Empty : JsonSerializer.Serialize(core, ModelJsonSerializerContext.Default.ApiTokenData);
 
                                 // Redirect to the success URL
-                                var successUrl = App.Configuration.AuthSuccessUrl;
+                                var successUrl = _configuration.AuthSuccessUrl;
                                 context.Response.Redirect($"{successUrl}?culture={user.Language.Name}&result={HttpUtility.UrlEncode(serviceJson)}&core={HttpUtility.UrlEncode(coreJson)}", true);
                                 return;
                             }
@@ -938,7 +944,7 @@ namespace com.etsoo.ServiceApp.Services
             }
 
             // Redirect to the failure URL
-            var url = App.Configuration.AuthFailureUrl;
+            var url = _configuration.AuthFailureUrl;
             var jsonResult = JsonSerializer.Serialize(result, CommonJsonSerializerContext.Default.ActionResult);
             context.Response.Redirect($"{url}?error={HttpUtility.UrlEncode(jsonResult)}", true);
         }
@@ -970,7 +976,7 @@ namespace com.etsoo.ServiceApp.Services
             var rq = new ApiRefreshTokenRQ
             {
                 Token = token,
-                AppId = App.Configuration.AppId,
+                AppId = _configuration.AppId,
                 TimeZone = data.TimeZone
             };
 
@@ -1237,18 +1243,18 @@ namespace com.etsoo.ServiceApp.Services
 
             var proxyRQ = new SwitchOrgProxyRQ
             {
-                AppId = App.Configuration.AppId,
-                AppKey = App.Configuration.AppKey,
+                AppId = _configuration.AppId,
+                AppKey = _configuration.AppKey,
                 OrganizationId = rq.OrganizationId,
                 FromOrganizationId = rq.FromOrganizationId
             };
 
             // Siganature
-            proxyRQ.Sign = proxyRQ.SignWith(App.Configuration.AppSecret);
+            proxyRQ.Sign = proxyRQ.SignWith(_configuration.AppSecret);
 
             try
             {
-                var api = $"{App.Configuration.ApiUrl}/Auth/SwitchOrg";
+                var api = $"{_configuration.ApiUrl}/Auth/SwitchOrg";
 
                 var client = _clientFactory.CreateClient();
                 client.AddAuthorizationHeader(BearerTokenType, rq.Token);

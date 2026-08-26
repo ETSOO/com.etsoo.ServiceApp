@@ -8,15 +8,10 @@ namespace com.etsoo.ServiceApp.Application
     /// <summary>
     /// SmartERP service base application interface
     /// Using global using to delcar alias instead of creating new extended interfaces
-    /// IServiceBaseApp<S, SqlConnection> where S : ServiceAppConfiguration
-    /// IServiceBaseApp<S, NpgsqlConnection> where S : ServiceAppConfiguration
-    /// IServiceBaseApp<S, SqliteConnection> where S : ServiceAppConfiguration
     /// SmartERP服务基础程序接口
     /// </summary>
-    /// <typeparam name="S">Configuration</typeparam>
     /// <typeparam name="C">Connection</typeparam>
-    public interface IServiceApp<out S, out C> : ICoreApplication<S, C>
-        where S : ServiceAppConfiguration
+    public interface IServiceApp<out C> : ICoreApplication<C>
         where C : DbConnection
     {
         /// <summary>

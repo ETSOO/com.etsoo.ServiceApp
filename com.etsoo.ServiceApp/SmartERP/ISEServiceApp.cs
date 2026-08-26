@@ -8,8 +8,7 @@ namespace com.etsoo.ServiceApp.SmartERP
     /// 司友云ERP服务程序接口
     /// </summary>
     /// <typeparam name="C">Generic configuration type</typeparam>
-    public interface ISEServiceApp<out C> : IServiceApp<C, NpgsqlConnection>
-        where C : ServiceAppConfiguration
+    public interface ISEServiceApp : IServiceApp<NpgsqlConnection>
     {
     }
 }
